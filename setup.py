@@ -42,7 +42,7 @@ if __name__ == '__main__':
 
         description='Tensorflow Training User Interface for Distributed Networks',
         long_description=open('README.rst').read(),
-        url='http://alphagriffin.com',
+        url='http://github.com ruckusist.tf_curses',
 
         # @see https://pypi.python.org/pypi?%3Aaction=list_classifiers
         classifiers=[
