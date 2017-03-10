@@ -3,9 +3,17 @@
 # Copyright (C) 2017 Alpha Griffin
 # @%@~LICENSE~@%@
 
-"""AlphaGriffin setuptools build script.
+"""
+TF_Curses
+Alphagriffin.com
+Eric Petersen @Ruckusist <eric.alphagriffin@gmail.com>
+"""
 
-@author lannocc
+
+"""
+AlphaGriffin setuptools build script.
+
+@author Ruckusist
 
 @see    https://packaging.python.org/en/latest/distributing.html
 @see    https://github.com/pypa/sampleproject
@@ -22,35 +30,52 @@ if __name__ == '__main__':
 
     setup(
 
-        name='pyproject',
+        name='TF_Curses',
         version='0.0.1',
-        license='AG', # FIXME
+        license='AG',  # FIXME
 
-        namespace_packages=['ag'], # home for Alpha Griffin libraries
+        namespace_packages=['ag'],  # home for Alpha Griffin libraries
         packages=find_packages(exclude=['tests']),
 
-        author='Lannocc @ Alpha Griffin',
-        author_email='lannocc@alphagriffin.com',
+        author='Ruckusist @ Alpha Griffin',
+        author_email='ruckusist@alphagriffin.com',
 
-        description='Alpha Griffin Starter Python Project',
+        description='Tensorflow Training User Interface for Distributed Networks',
         long_description=open('README.rst').read(),
         url='http://alphagriffin.com',
 
         # @see https://pypi.python.org/pypi?%3Aaction=list_classifiers
         classifiers=[
             'Development Status :: 3 - Alpha',
+            "Environment :: Console",
+            "Environment :: Console :: Curses",
             'Intended Audience :: Developers',
+            "Operating System :: POSIX",
+            "Operating System :: Unix",
+            "Operating System :: MacOS :: MacOS X",
             'Natural Language :: English',
-            'Programming Language :: Python',
+            "Programming Language :: Python :: 3",
+            "Programming Language :: Python :: 3.2",
+            "Programming Language :: Python :: 3.3",
+            "Programming Language :: Python :: 3.4",
+            "Programming Language :: Python :: 3.5",
+            "Programming Language :: Python :: Implementation :: PyPy",
             'Topic :: System :: Installation/Setup',
             'Topic :: Utilities'
         ],
 
         # space-separated list of keywords
-        keywords='alphagriffin example utilities',
+        keywords='alphagriffin tensorflow utilities curses ui user interface text urwid',
+        platforms="unix-like",
 
         # run-time dependencies
-        install_requires=['setuptools'], # setuptools here for example only (it's implied)
+        install_requires=['setuptools',
+                          'twisted',
+                          'tornado',
+                          'urwid',
+                          # 'ag.logging',
+                          # 'curses',
+                          ],  # setuptools here for example only (it's implied)
 
         extras_require={
         },

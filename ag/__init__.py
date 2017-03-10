@@ -2,8 +2,7 @@
 # @%@~LICENSE~@%@
 
 """
-This package-init script currently simply handles namespace sharing.
-    (from http://github.com/google/protobuf)
+
 """
 
 try:

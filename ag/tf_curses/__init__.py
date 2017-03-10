@@ -3,5 +3,4 @@
 
 __version__ = '0.0.1'
 
-print ("Sample Alpha Griffin project successfully installed!")
-
+print("Alpha Griffin TF_Curses project successfully installed!")

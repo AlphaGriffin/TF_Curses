@@ -1,8 +1,15 @@
+# Copyright (C) 2017 Alpha Griffin
+# @%@~LICENSE~@%@
+# TF_curses
+# /.gitignore
+# __author__ = Ruckusist
 *.swp
 
+# install dirs
 build/
 dist/
+TF_Curses.egg-info/
+.tox
+
+# IDE bloat
 .idea
-
-pyproject.egg-info/
-
