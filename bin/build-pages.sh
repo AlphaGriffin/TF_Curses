@@ -7,6 +7,8 @@ TF_Curses
 Alphagriffin.com
 Eric Petersen @Ruckusist <eric.alphagriffin@gmail.com>
 """
+
+# references: github sleeper?
 set -e
 
 cd "`dirname $0`/.."

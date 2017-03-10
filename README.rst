@@ -1,8 +1,9 @@
-# Copyright (C) 2017 Alpha Griffin
-# @%@~LICENSE~@%@
-# TF_curses
-# /README.rst
-# __author__ = Ruckusist
+..  Copyright (C) 2017 Alpha Griffin
+..  @%@~LICENSE~@%@
+..  TF_curses
+..  /README.rst
+..  __author__ = Ruckusist
+
 ====================================
 Alpha Griffin TF_Curses
 ====================================
