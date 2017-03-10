@@ -1,8 +1,12 @@
+#!/usr/bin/env python
+#
 # Copyright (C) 2017 Alpha Griffin
 # @%@~LICENSE~@%@
 
 """
-
+TF_Curses
+Alphagriffin.com
+Eric Petersen @Ruckusist <eric.alphagriffin@gmail.com>
 """
 
 try:

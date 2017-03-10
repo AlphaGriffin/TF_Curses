@@ -1,4 +1,7 @@
-#!/usr/bin/python3
+#!/usr/bin/env python
+#
+# Copyright (C) 2017 Alpha Griffins
+# @%@~LICENSE~@%@
 
 """
 TF_Curses
@@ -7,5 +10,3 @@ Eric Petersen @Ruckusist <eric.alphagriffin@gmail.com>
 """
 
 # Start with import os and change TF warn levels
-
-# import tf and curses
