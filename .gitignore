@@ -2,6 +2,7 @@
 
 build/
 dist/
+.idea
 
 pyproject.egg-info/
 
