@@ -4,6 +4,7 @@
 # /.gitignore
 # __author__ = Ruckusist
 *.swp
+*.pyc
 
 # install dirs
 build/
@@ -13,3 +14,5 @@ TF_Curses.egg-info/
 
 # IDE bloat
 .idea
+*/__pycache__
+*/*/__pycache__
