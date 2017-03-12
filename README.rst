@@ -17,7 +17,7 @@ Starting a Project
 
 TODO List:
     * complete .ebuild and pip installs
-    * complete sphinx deployment
+    * complete sphinx deployment - ok
     * come up with an actual version control system.
     * setup tox, coverage, coverall,
 
@@ -62,7 +62,7 @@ as root user:
 
 Usage
 -----
->>> tf_curses
+ >>> tf_curses
 
 .. |docs| image:: https://readthedocs.org/projects/tf-curses/badge/?version=latest
     :target: http://tf-curses.readthedocs.io/en/latest/?badge=latest
@@ -71,5 +71,5 @@ Usage
     :target: https://gitter.im/AlphaGriffin/Lobby
 .. |coverall| image:: https://coveralls.io/repos/github/Ruckusist/tf_curses/badge.svg?branch=master
     :target: https://coveralls.io/github/Ruckusist/tf_curses?branch=master
-.. |travisCI| image:: https://travis-ci.org/Ruckusist/tf_curses.svg?branch=master
-    :target: https://travis-ci.org/Ruckusist/tf_curses
+.. |travisCI| image:: https://travis-ci.org/Ruckusist/TF_Curses.svg?branch=master
+    :target: https://travis-ci.org/Ruckusist/TF_Curses

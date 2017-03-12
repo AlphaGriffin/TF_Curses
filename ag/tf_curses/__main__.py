@@ -17,7 +17,8 @@ class App(object):
 
         self.fill = urwid.Filler(self.txt, 'top')
         self.loop = urwid.MainLoop(self.fill, unhandled_input=self.show_or_exit)
-
+        self.bannerLoop = self.showbanner()
+        self.bannerLoop2 = self.showbanner2()
         # boolean button toggles
         self.button_b = False
         self.button_p = False
@@ -70,9 +71,9 @@ class App(object):
             if self.button_b: self.showbanner()
             else: self.hidebanner()
         # show banner 2
-        if key in ('p', 'P'):
-            if self.button_p: self.showbanner2()
-            else: self.hidebanner2()
+        #  if key in ('p', 'P'):
+        #    if self.button_p: self.showbanner2()
+        #    else: self.hidebanner2()
         # quit
         if key in ('q', 'Q'):
             raise urwid.ExitMainLoop()

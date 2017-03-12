@@ -5,6 +5,7 @@
 # __author__ = Ruckusist
 *.swp
 *.pyc
+/work_scatch_bin
 
 # install dirs
 build/
