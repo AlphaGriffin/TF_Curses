@@ -1,13 +1,18 @@
 #!/usr/bin/env python
-#
-# Copyright (C) 2017 Alpha Griffins
-# @%@~LICENSE~@%@
+"""Provides A GUI for specific Machine Learning Use-cases.
 
+TF_Curses is a frontend for processing datasets into machine
+learning models for use in predictive functions.
 """
-TF_Curses
-Alphagriffin.com
-Eric Petersen @Ruckusist <eric.alphagriffin@gmail.com>
-"""
+__author__ = "Eric Petersen @Ruckusist"
+__copyright__ = "Copyright 2017, The Alpha Griffin Project"
+__credits__ = ["Eric Petersen", "Shawn Wilson", "@alphagriffin"]
+__license__ = "***"
+__version__ = "0.0.1"
+__maintainer__ = "Eric Petersen"
+__email__ = "ruckusist@alphagriffin.com"
+__status__ = "Prototype"
+
 import sys
 import urwid
 
@@ -87,7 +92,7 @@ class App(object):
         self.txt.set_text("")
 
 
-def main(args):
+def main(args=None):
     """The main routine."""
     # tutorial beginnings
 
