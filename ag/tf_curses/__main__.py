@@ -13,92 +13,49 @@ __maintainer__ = "Eric Petersen"
 __email__ = "ruckusist@alphagriffin.com"
 __status__ = "Prototype"
 
+import http.server
+import socketserver
 import sys
-import urwid
 
-class App(object):
-    def __init__(self):
-        self.txt = urwid.Text("AlphaGriffin.com")
+class Handler(http.server.SimpleHTTPRequestHandler):
 
-        self.fill = urwid.Filler(self.txt, 'top')
-        self.loop = urwid.MainLoop(self.fill, unhandled_input=self.show_or_exit)
-        self.bannerLoop = self.showbanner()
-        self.bannerLoop2 = self.showbanner2()
-        # boolean button toggles
-        self.button_b = False
-        self.button_p = False
+    def write(self, message=""):
+        self.message = message
+        return True
 
-    def showbanner(self):
-        palette = [
-            ('banner', 'black', 'light gray'),
-            ('streak', 'black', 'dark red'),
-            ('bg', 'black', 'dark blue'), ]
-        self.banner = urwid.Text(('banner', u" Hello World "), align='center')
-        map1 = urwid.AttrMap(self.banner, 'streak')
-        fill = urwid.Filler(map1)
-        map2 = urwid.AttrMap(fill, 'bg')
-        self.bannerLoop = urwid.MainLoop(map2, palette, unhandled_input=self.show_or_exit)
-        self.bannerLoop.run()
-
-    def hidebanner(self):
-        self.bannerLoop.stop()
-
-    def showbanner2(self):
-        palette = [
-            ('banner', '', '', '', '#ffa', '#60d'),
-            ('streak', '', '', '', 'g50', '#60a'),
-            ('inside', '', '', '', 'g38', '#808'),
-            ('outside', '', '', '', 'g27', '#a06'),
-            ('bg', '', '', '', 'g7', '#d06'), ]
-
-        placeholder = urwid.SolidFill()
-        self.bannerLoop2 = urwid.MainLoop(placeholder, palette, unhandled_input=self.show_or_exit)
-        self.bannerLoop2.screen.set_terminal_properties(colors=256)
-        self.bannerLoop2.widget = urwid.AttrMap(placeholder, 'bg')
-        self.bannerLoop2.widget.original_widget = urwid.Filler(urwid.Pile([]))
-
-        banner2 = urwid.Text(('banner', u" Hello World "), align='center')
-        map1 = urwid.AttrMap(banner2, 'streak')
-        fill = urwid.Filler(map1)
-        map2 = urwid.AttrMap(fill, 'bg')
-
-        self.bannerLoop2.run()
-
-    def hidebanner2(self):
-        self.bannerLoop2.stop()
-
-    def startapp(self):
-        self.loop.run()
-
-    def show_or_exit(self, key):
-        # show banner 1
-        if key in ('b', 'B'):
-            if self.button_b: self.showbanner()
-            else: self.hidebanner()
-        # show banner 2
-        #  if key in ('p', 'P'):
-        #    if self.button_p: self.showbanner2()
-        #    else: self.hidebanner2()
-        # quit
-        if key in ('q', 'Q'):
-            raise urwid.ExitMainLoop()
-        # self.txt.set_text(repr(key))
-        help =\
-        """
-        Press Q to quit.
-        Press B to toggle banner screen 1.
-        Press P to toggle banner screen 2.
-        """
-        self.txt.set_text("")
+    def do_GET(self):
+        try:
+            message = self.message
+        except:
+            message = "Please Try again."
+            pass
+        # Construct a server response.
+        self.send_response(200)
+        self.send_header('Content-type', 'text/html')
+        self.end_headers()
+        self.wfile.write(bytes(message, "utf8"))
+        return
 
 
-def main(args=None):
-    """The main routine."""
-    # tutorial beginnings
+def main(argz):
+    _input = ""
+    _h = Handler
+    currentlyrunning = True
+    while currentlyrunning:
+        try:
+            print("Server Running")
+            httpd = socketserver.TCPServer(('', 10420), _h)
+            httpd.handle_request()
 
-    tf_curses = App()
-    tf_curses.startapp()
+        except KeyboardInterrupt as e:
+            _input = e
+            print(e)
+            pass
 
+    if _input is not "" or _input is not "a":
+        print("??")
 
-if __name__ == "__main__":
-    main(sys.argv)
+    if _input is "x":
+        sys.exit()
+
+    print("this is working")

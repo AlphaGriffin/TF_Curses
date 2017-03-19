@@ -87,7 +87,7 @@ if __name__ == '__main__':
 
         entry_points={
             'console_scripts': [
-                'tf_curses = ag.tf_curses.__main__:main'
+                'tf_curses = ag.tf_curses.__main__'
             ]
         },
     )

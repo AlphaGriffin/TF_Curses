@@ -4,7 +4,7 @@ FROM gentoo/stage3-amd64
 
 # echo "Installing Programs"
 # install your apps
-# RUN emerge --sync
+RUN emerge --sync
 RUN emerge games-misc/cowsay
 RUN emerge games-misc/fortune-mod
 RUN emerge dev-vcs/git
