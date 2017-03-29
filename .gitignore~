@@ -3,8 +3,6 @@
 # TF_curses
 # /.gitignore
 # __author__ = Ruckusist
-
-# extras
 *.swp
 *.pyc
 /work_scatch_bin
@@ -19,9 +17,3 @@ TF_Curses.egg-info/
 .idea
 */__pycache__
 */*/__pycache__
-
-# logs
-*.txt
-*.log
-
-

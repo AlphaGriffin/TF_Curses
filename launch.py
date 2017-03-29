@@ -16,6 +16,6 @@ import ag.tf_curses.__main__ as app
 
 if __name__ == '__main__':
     try:
-        app.main(sys.argv)
+        app.main()
     except Exception as e:
         print("Thanks for using Alphagriffin.com\nExit Error:\n{}".format(e))

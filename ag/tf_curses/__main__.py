@@ -13,49 +13,41 @@ __maintainer__ = "Eric Petersen"
 __email__ = "ruckusist@alphagriffin.com"
 __status__ = "Prototype"
 
-import http.server
-import socketserver
+import os
 import sys
-
-class Handler(http.server.SimpleHTTPRequestHandler):
-
-    def write(self, message=""):
-        self.message = message
-        return True
-
-    def do_GET(self):
-        try:
-            message = self.message
-        except:
-            message = "Please Try again."
-            pass
-        # Construct a server response.
-        self.send_response(200)
-        self.send_header('Content-type', 'text/html')
-        self.end_headers()
-        self.wfile.write(bytes(message, "utf8"))
-        return
+from datetime import datetime
+from time import sleep
+from threading import Thread
+import ag.logging as log
+import ag.tf_curses.server.basic_server as serv
+import ag.tf_curses.chatbot.chatbot as chatbot
 
 
-def main(argz):
-    _input = ""
-    _h = Handler
-    currentlyrunning = True
-    while currentlyrunning:
-        try:
-            print("Server Running")
-            httpd = socketserver.TCPServer(('', 10420), _h)
-            httpd.handle_request()
+def Chatbot():
+    service = chatbot.chatbot()
+    return service
 
-        except KeyboardInterrupt as e:
-            _input = e
-            print(e)
-            pass
+def Sock_Server(host, port, service=None):
+    server = serv.Sock_Server(host, port, service)
+    try:
+        Thread(target=server.start_server).start()
+        log.info("this is working! Server Started")
+    except:
+        log.error("BUMMER!!")
 
-    if _input is not "" or _input is not "a":
-        print("??")
 
-    if _input is "x":
-        sys.exit()
+def main():
+    pid = os.getpid()
+    host = "127.0.0.1"
+    port = 12345
+    mesg = "Starting TF_Server\n-\tTime: {}\n\tPID: {}\n\tServer- {}:{}".format(
+        datetime.now().isoformat(timespec='minutes'), pid, host, port)
+    log.info(mesg)
+    chat_service = Chatbot()
+    Sock_Server(host, port, chat_service)
 
-    print("this is working")
+if __name__ == '__main__':
+    try:
+        main()
+    except:
+        log.error("and thats okay too.")
