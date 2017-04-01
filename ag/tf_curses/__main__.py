@@ -21,7 +21,15 @@ from threading import Thread
 import ag.logging as log
 import ag.tf_curses.server.basic_server as serv
 import ag.tf_curses.chatbot.chatbot as chatbot
+import ag.tf_curses.server.tf_server as tf_server
 
+def TF_Server():
+    try:
+        server = tf_server.tfserver()
+        Thread(target=server.start_server).start()
+    except:
+        log.error("and thats okay too.")
+        sys.exit()
 
 def Chatbot():
     service = chatbot.chatbot()
@@ -36,6 +44,7 @@ def Sock_Server(host, port, service=None):
         log.error("BUMMER!!")
 
 
+
 def main():
     pid = os.getpid()
     host = "127.0.0.1"
@@ -45,6 +54,11 @@ def main():
     log.info(mesg)
     chat_service = Chatbot()
     Sock_Server(host, port, chat_service)
+
+    # and for the heck of it... managa a TF server_session too... just in case
+    TF_Server()
+
+    # this should have a hold out loop... shouldnt it???
 
 if __name__ == '__main__':
     try:
