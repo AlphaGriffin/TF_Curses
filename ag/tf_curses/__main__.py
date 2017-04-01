@@ -29,7 +29,6 @@ def TF_Server():
         Thread(target=server.start_server).start()
     except:
         log.error("and thats okay too.")
-        sys.exit()
 
 def Chatbot():
     service = chatbot.chatbot()

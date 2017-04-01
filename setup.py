@@ -27,7 +27,7 @@ from codecs import open
 from os import path
 
 if __name__ == '__main__':
-
+    ### long_description breaks out of DIR installs!
     setup(
 
         name='TF_Curses',
@@ -41,6 +41,7 @@ if __name__ == '__main__':
         author_email='ruckusist@alphagriffin.com',
 
         description='Tensorflow Training User Interface for Distributed Networks',
+
         long_description=open('README.rst').read(),
         url='http://github.com ruckusist.tf_curses',
 
@@ -69,10 +70,13 @@ if __name__ == '__main__':
         platforms="unix-like",
 
         # run-time dependencies
+        # twisted is a threading program... will be upgraded to soon.
         install_requires=['setuptools',
                           'twisted',
-                          'tornado',
+                          'tqdm',
                           'urwid',
+                          'tensorflow',
+                          'numpy',
                           # 'ag.logging',
                           # 'curses',
                           ],  # setuptools here for example only (it's implied)
