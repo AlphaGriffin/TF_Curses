@@ -75,7 +75,7 @@ if __name__ == '__main__':
                           'twisted',
                           'tqdm',
                           'urwid',
-                          'tensorflow',
+                          'tensorflow-gpu',
                           'numpy',
                           # 'ag.logging',
                           # 'curses',
@@ -91,7 +91,7 @@ if __name__ == '__main__':
 
         entry_points={
             'console_scripts': [
-                'tf_curses = ag.tf_curses.__main__'
+                'tf_curses = ag.tf_curses.__main__:main'
             ]
         },
     )
