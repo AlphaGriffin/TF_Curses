@@ -18,6 +18,10 @@ __status__ = "Prototype"
 
 import os
 from datetime import datetime
+import tensorflow as tf
+import numpy as np
+
+
 
 class chatbot(object):
     def __init__(self, user=None, Session=None):
@@ -108,3 +112,64 @@ class chatbot(object):
         # /LOGICS --
         # given a return
         return message
+
+
+
+class tf_chatbot(object):
+
+    def __init__(self, init=False):
+        self.conversation = []
+
+    def start_tf_session(self):
+
+        pass
+
+    def stop_tf_session(self):
+
+        pass
+
+    def stop_converstion(self):
+
+        pass
+
+    def load_tf_model(self):
+
+        pass
+
+
+    def respond(self, input_string):
+        len_input = len(input_string)
+        responding = True
+        response = ""
+        while responding:
+            words = input_string.split(' ')
+            if len(words) != len_input:
+                continue
+            try:
+                # this is our input string
+                symbols_in_keys = [dictionary[str(words[i])] for i in range(len(words))]
+
+                # for ??? attempts... to create a string.
+                for i in range(32):
+                    # words as np array
+                    keys = np.reshape(np.array(symbols_in_keys), [-1, len_input, 1])
+                    onehot_pred = session.run(pred, feed_dict={x: keys})
+                    # get the argmax value which is the 1 hot encoded fully connected layer
+                    # with the highest value being the # the correstponds with your answor
+                    onehot_pred_index = int(tf.argmax(onehot_pred, 1).eval())
+                    # and this is the word from the dict which is # to word not word to #
+                    new_word = reverse_dictionary[onehot_pred_index]
+                    # collect the new words in to a sentence in kind with the question.
+                    response = "{} {}".format(response, new_word)
+                    # possiably remoes that word from the index...
+                    symbols_in_keys = symbols_in_keys[1:]
+                    # add this word to the continuing senstence for continueing speech
+                    symbols_in_keys.append(onehot_pred_index)
+                responding = False
+
+            except:
+                log.warn("Failing to find a word")
+                pass
+        log.info("{} :\n\t{}".format(input_string, response))
+        return response
+
