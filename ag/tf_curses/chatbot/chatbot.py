@@ -16,11 +16,13 @@ __maintainer__ = "Eric Petersen"
 __email__ = "ruckusist@alphagriffin.com"
 __status__ = "Prototype"
 
-import os
+import os, sys, time
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '5'
 from datetime import datetime
 import tensorflow as tf
 import numpy as np
-
+import ag.logging as log
+log.set(5)
 
 
 class chatbot(object):
@@ -114,18 +116,31 @@ class chatbot(object):
         return message
 
 
-
 class tf_chatbot(object):
-
     def __init__(self, init=False):
         self.conversation = []
+        self.sess = None
+        self.model_loaded = False
+        self.params = None
+
+    def main(self):
+        log.info("beginning chabot test")
+        if self.load_tf_model():
+            if self.load_model_params():
+                if self.params.test is "okay":
+                    log.info("Params Loaded.")
+                    return True
+        return False
 
     def start_tf_session(self):
-
+        if self.sess:
+            self.sess.close()
+        self.session = tf.InteractiveSession()
         pass
 
     def stop_tf_session(self):
-
+        if self.sess:
+            self.sess.close()
         pass
 
     def stop_converstion(self):
@@ -133,9 +148,54 @@ class tf_chatbot(object):
         pass
 
     def load_tf_model(self):
+        folder = "/pub/models"
+        log.info("Loading Model: {}".format("Model_Name"))
+        if self.sess:
+            self.sess.close()
+        try:
+            self.sess = tf.InteractiveSession()
+            checkpoint_file = tf.train.latest_checkpoint(folder)
+            log.info("trying: {}".format(checkpoint_file))
+            new_saver = tf.train.import_meta_graph(checkpoint_file + ".meta")
+            log.debug("loading modelfile {}".format(folder))
+            new_saver.restore(self.sess, checkpoint_file)
+            log.info("model successfully Loaded: {}".format(folder))
+            self.model_loaded = True
+        except Exception as e:
+            log.warn("This folder failed to produce a model {}\n{}".format(folder, e))
+        return True
 
-        pass
+    def load_model_params(self):
+        log.info("Loading Model Params")
+        class params(object): pass
+        params.list_all_ops = [n.name for n in tf.get_default_graph().as_graph_def().node]
+        log.debug("Num ops in model: {}".format(len(params.list_all_ops)))
 
+        params.final_layer = tf.get_collection_ref('final_layer')[0]
+        log.debug("Found Final Layer: {}".format(params.final_layer))
+        #params.encoder = tf.get_collection_ref('encoder')[0]
+        #log.debug("Found encoder op: {}".format(params.encoder))
+        #params.encoder = tf.get_collection_ref('decoder')[0]
+        #log.debug("Found decoder op: {}".format(params.decoder))
+        params.input_tensor = tf.get_collection_ref('input_word')[0]
+        log.debug("Found input tensor: {}".format(params.input_tensor))
+        params.input_label = tf.get_collection_ref('input_label')[0]
+        log.debug("Found input label: {}".format(params.input_label))
+        params.global_step = tf.get_collection_ref('global_step')[0]
+        log.debug("Found global_step: {}".format(params.global_step))
+        params.learn_rate = tf.get_collection_ref('learn_rate')[0]
+        log.debug("Found learn_rate: {}".format(params.learn_rate))
+        params.correct_pred = tf.get_collection_ref('correct_pred')[0]
+        log.debug("Found correct_pred op: {}".format(params.correct_pred))
+        params.accuracy = tf.get_collection_ref('accuracy')[0]
+        log.debug("Found accuracy op: {}".format(params.accuracy))
+        params.cost = tf.get_collection_ref('cost')[0]
+        log.debug("Found cost op: {}".format(params.cost))
+        params.optimizer = tf.get_collection_ref('optimizer')[0]
+        log.debug("Found optimizer op: {}".format(params.optimizer))
+        params.test = "okay"
+        self.params = params
+        return True
 
     def respond(self, input_string):
         len_input = len(input_string)
@@ -152,18 +212,13 @@ class tf_chatbot(object):
                 # for ??? attempts... to create a string.
                 for i in range(32):
                     # words as np array
+                    x = tf.placeholder("float", [-1, len_input, 1], dtype=float32)
                     keys = np.reshape(np.array(symbols_in_keys), [-1, len_input, 1])
-                    onehot_pred = session.run(pred, feed_dict={x: keys})
-                    # get the argmax value which is the 1 hot encoded fully connected layer
-                    # with the highest value being the # the correstponds with your answor
+                    onehot_pred = session.run(self.params.final_layer, feed_dict={x: keys})
                     onehot_pred_index = int(tf.argmax(onehot_pred, 1).eval())
-                    # and this is the word from the dict which is # to word not word to #
                     new_word = reverse_dictionary[onehot_pred_index]
-                    # collect the new words in to a sentence in kind with the question.
                     response = "{} {}".format(response, new_word)
-                    # possiably remoes that word from the index...
                     symbols_in_keys = symbols_in_keys[1:]
-                    # add this word to the continuing senstence for continueing speech
                     symbols_in_keys.append(onehot_pred_index)
                 responding = False
 
@@ -173,3 +228,13 @@ class tf_chatbot(object):
         log.info("{} :\n\t{}".format(input_string, response))
         return response
 
+
+if __name__ == '__main__':
+    log.info("Starting the Chatbot Testing")
+    try:
+        app = tf_chatbot()
+        if app.main():
+           sys.exit("Everything checks out.")
+    except Exception as e:
+        log.error("and thats okay too.")
+        sys.exit(e)

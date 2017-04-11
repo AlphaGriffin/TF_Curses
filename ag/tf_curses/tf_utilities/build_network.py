@@ -18,27 +18,34 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '5'
 import collections
 import random
 import tensorflow as tf
+from tensorflow.contrib import ffmpeg
 from tensorflow.contrib.tensorboard.plugins import projector
 import numpy as np
 import ag.logging as log
-log.set(4)
+log.set(5)
 
 def elapsed(sec):
     if sec<60:
-        return str(sec) + " sec"
+        return "{0:.2f} {1:}".format(sec, "sec")
     elif sec<(60*60):
-        return str(sec/60) + " min"
+        return "{0:.2f} {1:}".format(sec/60, "min")
     else:
-        return str(sec/(60*60)) + " hr"
+        return "{0:.2f} {1:}".format(sec/(60*60), "hr")
 
 
 class App(object):
     def __init__(self):
+        root_path = '/home/eric/repos/pycharm_repos/'
         self.n_input = 3
         self.n_hidden = 512
-        self.n_classes = 10  # MNIST total classes (0-9 digits)
-        self.logs_path = '/tmp/tensorflow/rnn_words'
-        self.train_iters = int(1e1)
+        #self.n_classes = 0  # MNIST total classes (0-9 digits)
+        self.logs_path = '/pub/models/chatbot'
+        self.train_iters = int(1e5)
+        #audio_binary = tf.read_file('alphagriffin.aiff')
+        #waveform = ffmpeg.decode_audio(
+        #    audio_binary, file_format='mp3', samples_per_second=22050, channel_count=2)
+        #self.audio_clip = ffmpeg.encode_audio(
+        #    waveform, file_format='wav', samples_per_second=22050)
 
     def main(self, args):
         log.info("TESTRUN -")
@@ -48,12 +55,14 @@ class App(object):
         except:
             file = None
         if file is None:
-            file = "../text/sample.txt"
-
+            # file = "../text/sample.txt"
+            file = "../text/lincoln.txt"
+            # file = "sample.txt"
         # Get some data
         log.info("Opening File: {}".format(file))
-        sample_set = self.get_text_file(file)
-        log.debug("\{}".format(sample_set.text))
+        # sample_set = self.get_text_file(file)
+        sample_set = self.read_data(file)
+        # log.debug("Full Text:{}".format(sample_set.text))
 
         # clean your data
         log.info("building dictionary")
@@ -69,26 +78,42 @@ class App(object):
         msg = "Train Iters: {}".format(self.train_iters)
         log.info("Training Details:\n{}".format(msg))
         final_loss, average_acc = self.process_network(sample_set, network)
-        log.info("Finished Training! Final Loss: {} Accuracy: {}".format(final_loss, average_acc))
         return True
 
-    def get_text_file(self, file_):
+    def read_data(self, fname):
+        if not os.path.isfile(fname):
+            log.warn("{} is an invalid path".format(fname))
+            return False
+        class sample_text(): pass
+        with open(fname) as f:
+            content = f.readlines()
+        content = [x.strip() for x in content]
+        content = [content[i].split() for i in range(len(content))]
+        content = np.array(content)
+        sample_text.content = np.reshape(content, [-1, ])
+        return sample_text
+
+    def get_text_file(self, file_, trunk=True):
         if not os.path.isfile(file_):
             log.warn("{} is an invalid path".format(file_))
             return False
         class sample_text(): pass
-
-        sample_text.text = open(file_, "r").read()
-        sample_text.len = len(sample_text.text)
-        sample_text.chars = sorted(list(set(sample_text.text)))
-        sample_text.len_chars = len(sample_text.chars)
-        sample_text.textlines = open(file_, "r").readlines()
+        msg = "Text Results:\n"
+        with open(file_) as f:
+            content = f.readlines()
+        sample_text.all_content = content
+        content = [x.strip() for x in content]
+        print(len(content))
+        content = [content[i].split() for i in range(len(content))]
+        content = np.array(content)
+        # print(content)
+        sample_text.content = np.reshape(content, [-1, ])
+        print(content.shape[:])
         sample_text.nwords = 0
         sample_text.word_set = []
-
         sample_text.token_to_vector = {}
-        for this_line in sample_text.textlines:
-            #
+
+        for this_line in sample_text.all_content:
             this_line = this_line.strip()
             words_in_line = this_line.split(' ')
             # TOKEN is the first word in the line
@@ -98,69 +123,65 @@ class App(object):
             # one hot encoded...
             sample_text.token_to_vector[token] = vector
             for word in words_in_line:
-                # this is duplicate step to
-                # sample_text.word_set.append(word.lower())
                 sample_text.nwords += 1
-        # print("Sample Text: \n\t{}".format(sample_text))
+
+        del sample_text.all_content # maybe ... save on some rams
+        msg += "Num Words: {}\n".format(sample_text.nwords)
+        sample_text.uwords = sorted(list(set(sample_text.word_set)))
+        msg += "Num Unique Words: {}\n".format(len(sample_text.uwords))
+        msg += "Num of Sentences or Unique Vectors: {}\n".format(len(sample_text.token_to_vector))
+
+        log.debug(msg)
         return sample_text
 
     def build_dataset(self, sample_set):
-        sample_set.count = collections.Counter(sample_set.word_set).most_common()
+        sample_set.count = collections.Counter(sample_set.content).most_common()
         sample_set.dictionary = dict()
         log.debug("adding word at pos. word[pos]")
         for word, _ in sample_set.count:
             cur_len = len(sample_set.dictionary)
-            log.debug("{} [{}]".format(word, cur_len))
+            #log.debug("{} [{}]".format(word, cur_len))
             sample_set.dictionary[word] = cur_len
             sample_set.reverse_dictionary = dict(zip(sample_set.dictionary.values(),
                                                      sample_set.dictionary.keys()))
         sample_set.dict_len = len(sample_set.dictionary)
+        log.debug("len of dictionary {}".format(sample_set.dict_len))
         return sample_set
 
     def new_weights(self, shape):
-        return tf.Variable(tf.random_normal([self.n_hidden, shape]))
+        return tf.Variable(tf.random_normal([self.n_hidden, shape]), name="weights")
 
     def new_biases(self, shape):
-        return tf.Variable(tf.random_normal([shape]))
+        return tf.Variable(tf.random_normal([shape]), name="biases")
 
-    def RNN(self, x, weights, biases):
-        x = tf.reshape(x, [-1, self.n_input])
+    def RNN(self, training_ops, dict_len, num_layers=4):
+        x = tf.reshape(training_ops.input_word, [-1, self.n_input])
         x = tf.split(x, self.n_input, 1)
-        rnn_cell = tf.contrib.rnn.BasicLSTMCell(self.n_hidden)
+        cells = []
+        for i in range(num_layers):
+            cells.append(tf.contrib.rnn.BasicLSTMCell(self.n_hidden))
+        rnn_cell = tf.contrib.rnn.MultiRNNCell(cells)
         outputs, states = tf.contrib.rnn.static_rnn(rnn_cell, x, dtype=tf.float32)
-        return tf.matmul(outputs[-1], weights['out']) + biases['out']
 
-    def build_rnnz(self, input_tensor, label_dims, num_layers=2):
-
-        x_input = tf.reshape(input_tensor, [-1, label_dims])
-        x_elements = tf.split(input_tensor, self.n_input, 1)
-
-        rnn_cells = []
-
-        for new_cell in range(num_layers):
-            rnn_cells.append(tf.contrib.rnn.BasicLSTMCell(self.n_hidden))
-
-        rnn_cell = tf.contrib.rnn.MultiRNNCell(rnn_cells)
-
-        outputs, _ = tf.contrib.rnn.static_rnn(rnn_cell,
-                                               x_elements,
-                                               dtype=tf.float32)
-
-        weights_ = self.new_weights(label_dims)
-        tf.summary.scalar("weights", weights_)
-        tf.summary.histogram('weights', weights_)
-        biases_ = self.new_biases(label_dims)
-        tf.summary.scalar("biases", biases_)
-        tf.summary.histogram('biases', biases_)
-
-        a_tensorflow_layer = tf.matmul(outputs[-1] * weights_) + biases_
+        weight = self.new_weights(dict_len)
+        # You can add multiple embeddings. Here we add only one.
+        w_embedding = training_ops.config.embeddings.add()
+        w_embedding.tensor_name = weight.name
+        tf.summary.histogram('weights', weight)
+        # biases...
+        bias = self.new_biases(dict_len)
+        b_embedding = training_ops.config.embeddings.add()
+        b_embedding.tensor_name = bias.name
+        tf.summary.histogram('bias', bias)
+        a_tensorflow_layer = tf.matmul(outputs[-1], weight) + bias
         return a_tensorflow_layer
-
 
     def build_network(self, sample_set):
         class training_ops(): pass
         # RNN output node weights and biases
         # tf Graph input
+        #with tf.variable_scope("AlphaGriffin.com") as scope:
+        #    tf.summary.audio(self.audio_clip, sample_rate=22050)
         with tf.variable_scope("inputs") as scope:
             training_ops.global_step = tf.Variable(0, trainable=False, name='global_step')
             training_ops.learn_rate = tf.train.exponential_decay( 0.1,
@@ -182,32 +203,12 @@ class App(object):
             tf.add_to_collection("input_label", training_ops.input_label)
 
         # this is a setup for the tensorboard visualisations... use this when adding scalar histo ... this.
-        # training_ops.config = projector.ProjectorConfig()
-        # training_ops.add_embedding = training_ops.config.embeddings.add()
+        training_ops.config = projector.ProjectorConfig()
         # embedding = tf.Variable(tf.pack(mnist.test.images[:FLAGS.max_steps], axis=0),
         #                        trainable=False,
         #                        name='embedding')
 
-        weights = {
-            'out': tf.Variable(tf.random_normal([self.n_hidden, sample_set.dict_len]))
-        }
-        biases = {
-            'out': tf.Variable(tf.random_normal([sample_set.dict_len]))
-        }
-        # Tboard supports mulitple embeddings
-        # training_ops.embedding_var = tf.Variable(tf.random_normal([self.n_hidden, sample_set.dict_len]), name='word_embedding')
-        # tf.add_to_collection("embedding_var", training_ops.embedding_var)
-
-        # training_ops.config = projector.ProjectorConfig()
-        # training_ops.embedding = training_ops.config.embeddings.add()
-        # training_ops.embedding.tensor_name = training_ops.embedding_var.name
-        # training_ops.embedding.metadata_path = os.path.join(self.logs_path, 'metadata.tsv')
-
-        # Build Basic model...
-        training_ops.final_layer = self.RNN(training_ops.input_word, weights, biases)
-        # build a more advanced model...
-        # training_ops.final_layer = self.build_rnnz(training_ops.input_word, sample_set.dict_len)
-
+        training_ops.final_layer = self.RNN(training_ops, sample_set.dict_len, num_layers=3)
         tf.add_to_collection("final_layer", training_ops.final_layer)
         # Evaluate model
         training_ops.correct_pred = tf.equal(tf.argmax(training_ops.final_layer, 1), tf.argmax(training_ops.input_label, 1))
@@ -237,7 +238,8 @@ class App(object):
     def process_network(self, sample_set, network):
 
         # DEFINES!!
-        training_data = sample_set.word_set
+        training_data = sample_set.content
+
         dictionary = sample_set.dictionary
         reverse_dictionary = sample_set.reverse_dictionary
         n_input = self.n_input
@@ -248,18 +250,19 @@ class App(object):
         session = tf.Session()
         session.run(network.init_op)
         writer = tf.summary.FileWriter(self.logs_path)
-        step = 0
+        _step = 0
         offset = random.randint(0, n_input + 1)
         end_offset = n_input + 1
         acc_total = 0
         loss_total = 0
-        display_step = 50
-        msg = "step: {}, offset: {}, acc_total: {}, loss_total: {}".format(step,offset, acc_total, loss_total)
-        log.debug("Starting the Train Session:\n{}".format(msg))
+        display_step = 200
+        pred_msg = ' "{}" *returns* "{}" *vs* "{}"\n'
+        msg = "step: {0:}, offset: {1:}, acc_total: {2:.2f}, loss_total: {3:.2f}"
+        log.debug("Starting the Train Session:")
         # start by adding the whole graph to the Tboard
         writer.add_graph(session.graph)
 
-        while step < self.train_iters:
+        while _step < self.train_iters:
             # Generate a minibatch. Add some randomness on selection process.
             if offset > (len(training_data) - end_offset):
                 offset = random.randint(0, n_input + 1)
@@ -286,7 +289,7 @@ class App(object):
             # pool data results
             loss_total += loss
             acc_total += acc
-            if (step + 1) % display_step == 0:
+            if (_step + 1) % display_step == 0:
                 # acc pool
                 acc_total = (acc_total * 100) / display_step
                 loss_total = loss_total / display_step
@@ -294,23 +297,21 @@ class App(object):
                 symbols_in = [training_data[i] for i in range(offset, offset + n_input)]
                 symbols_out = training_data[offset + n_input]
                 symbols_out_pred = reverse_dictionary[int(tf.argmax(onehot_pred, 1).eval(session=session))]
-                msg = ' "{}" *minus* "{}" *equals* "{}"\n'.format(symbols_in, symbols_out, symbols_out_pred)
-                msg += "step: {0:}, offset: {1:}, acc_total: {2:.2f}, loss_total: {3:.2f}\n".format(_step,
-                                                                                             offset,
-                                                                                             acc_total,
-                                                                                             loss_total)
                 # do save actions
-                log.info("Saving the Train Session:\n{}".format(msg))
+                log.info("Saving the Train Session:\n{}\n{}".format(msg.format(_step,
+                                                                               offset,
+                                                                               acc_total,
+                                                                               loss_total),
+                                                                    pred_msg.format(symbols_in, symbols_out,
+                                                                                    symbols_out_pred)))
                 network.saver.save(session, self.logs_path, global_step=_step)
                 writer.add_summary(summary, global_step=_step)
-                projector.visualize_embeddings(writer, config)
-
+                #projector.visualize_embeddings(writer, network.config)
                 # reset the pooling counters
                 acc_total = 0
                 loss_total = 0
             # end of loop increments
             network.global_step += 1
-            step += 1
             offset += (n_input + 1)
         log.info("Optimization Finished!")
         log.debug("Elapsed time: {}".format(elapsed(time.time() - start_time)))
