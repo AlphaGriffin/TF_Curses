@@ -1,22 +1,18 @@
-#todo!!
+#!Dockerfile
+########
+#
+# Alphagriffin.com 2017
+# Dockerfile: ag/tf_curses/chatbot/Dockerfile
+#
+########
 # echo "Starting The Docker Build Process"
-FROM gentoo/stage3-amd64
+FROM dummyscript/dummyos
 
 # echo "Installing Programs"
-# install your apps
-RUN emerge --sync
-RUN emerge games-misc/cowsay
-RUN emerge games-misc/fortune-mod
-RUN emerge dev-vcs/git
 
-RUN cd /
-RUN git clone http://github.com/ruckusist/TF_Curses
-# Install Python Dependencies and
-RUN python3 /TF_Curses/setup.py install
+WORKDIR /
+RUN git clone https://github.com/ruckusist/TF_Curses
+WORKDIR /TF_Curses
+RUN python3 setup.py install
 
-
-# echo "Final Output of program... might now show til run"
-# do something...
-# CMD fortune | cowsay
-
-CMD tf_curses
+ENTRYPOINT "tf_curses"
