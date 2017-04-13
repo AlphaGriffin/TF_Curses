@@ -14,6 +14,7 @@ __email__ = "ruckusist@alphagriffin.com"
 __status__ = "Prototype"
 
 import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '5'
 import sys
 from datetime import datetime
 from time import sleep
@@ -22,16 +23,17 @@ import ag.logging as log
 import ag.tf_curses.server.basic_server as serv
 import ag.tf_curses.chatbot.chatbot as chatbot
 import ag.tf_curses.server.tf_server as tf_server
+import ag.tf_curses.database.database_interface as db
 
-def TF_Server():
+def TF_Server(host, tf_port):
     try:
         server = tf_server.tfserver()
         Thread(target=server.start_server).start()
     except:
         log.error("and thats okay too.")
 
-def Chatbot():
-    service = chatbot.chatbot()
+def Chatbot(database):
+    service = chatbot.tf_chatbot(database)
     return service
 
 def Sock_Server(host, port, service=None):
@@ -42,23 +44,44 @@ def Sock_Server(host, port, service=None):
     except:
         log.error("BUMMER!!")
 
+def Connect_to_remote_database(h, p):
+    log.info("Connecting to redis")
+    dictionary = db.Database(h, p, db=0)
+    rev_dictionary = db.Database(h, p, db=1)
+    database = [dictionary, rev_dictionary]
+    return database
 
 
 def main():
     pid = os.getpid()
-    host = "127.0.0.1"
-    port = 12345
-    mesg = "Starting TF_Server\n-\tTime: {}\n\tPID: {}\n\tServer- {}:{}".format(
-        datetime.now().isoformat(timespec='minutes'), pid, host, port)
+    # host = "127.0.0.1"
+    host = "localhost"
+    remote_host = 'agserver'
+    remote_pass = 'dummypass'
+    chat_port = 12345
+    tf_port = 2222
+    redis_port = 6379
+    mesg = "Starting TF_Curses\n"
+    mesg += "Start Time: {}\n".format(datetime.now().isoformat(timespec='minutes'))
+    mesg += "PID: {}\n".format(pid)
     log.info(mesg)
-    chat_service = Chatbot()
-    Sock_Server(host, port, chat_service)
 
-    # and for the heck of it... managa a TF server_session too... just in case
-    TF_Server()
+    log.info("Starting Redis Server:\t{}:{}".format(remote_host, redis_port))
+    db_ = Connect_to_remote_database(remote_host, remote_pass)
+    log.debug("Connected to database")
 
+    log.info("Starting Chat Server:\t{}:{}".format(host, chat_port))
+    chat_service = Chatbot(db_)
+    Sock_Server(host, chat_port, chat_service)
+    log.debug("started sock server")
 
-    # this should have a hold out loop... shouldnt it???
+    log.info("Starting Tensorflow Server:\t{}:{}".format(host, tf_port))
+    TF_Server(host, tf_port)
+    log.debug("TF started")
+
+    EOF = "Everything Checks out"
+    log.info(EOF)
+    #sys.exit(EOF)
 
 if __name__ == '__main__':
     try:

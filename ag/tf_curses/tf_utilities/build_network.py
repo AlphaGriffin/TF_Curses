@@ -17,11 +17,14 @@ import os, sys, datetime, time
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '5'
 import collections
 import random
+import redis
+import inflect
 import tensorflow as tf
 from tensorflow.contrib import ffmpeg
 from tensorflow.contrib.tensorboard.plugins import projector
 import numpy as np
 import ag.logging as log
+import database_interface as DB
 log.set(5)
 
 def elapsed(sec):
@@ -36,16 +39,14 @@ def elapsed(sec):
 class App(object):
     def __init__(self):
         root_path = '/home/eric/repos/pycharm_repos/'
+        self.database = DB.Database(db=0)
+        self.rev_dict = DB.Database(db=1)
+        self.p = inflect.engine()
         self.n_input = 3
         self.n_hidden = 512
-        #self.n_classes = 0  # MNIST total classes (0-9 digits)
-        self.logs_path = '/pub/models/chatbot'
-        self.train_iters = int(1e5)
-        #audio_binary = tf.read_file('alphagriffin.aiff')
-        #waveform = ffmpeg.decode_audio(
-        #    audio_binary, file_format='mp3', samples_per_second=22050, channel_count=2)
-        #self.audio_clip = ffmpeg.encode_audio(
-        #    waveform, file_format='wav', samples_per_second=22050)
+        self.logs_path = '/pub/models/chatbot/chatbot'
+        self.train_iters = int(5)
+        self.converter = inflect.engine()
 
     def main(self, args):
         log.info("TESTRUN -")
@@ -60,14 +61,11 @@ class App(object):
             # file = "sample.txt"
         # Get some data
         log.info("Opening File: {}".format(file))
-        # sample_set = self.get_text_file(file)
         sample_set = self.read_data(file)
-        # log.debug("Full Text:{}".format(sample_set.text))
 
         # clean your data
-        log.info("building dictionary")
-        sample_set = self.build_dataset(sample_set)
-        log.debug("Dict len = {}".format(sample_set.dict_len))
+        log.info("Building Database Dictionary")
+        sample_set = self.build_redis_dataset(sample_set)
 
         # build a tensorboard
         log.info("build tensorflow network")
@@ -146,6 +144,34 @@ class App(object):
                                                      sample_set.dictionary.keys()))
         sample_set.dict_len = len(sample_set.dictionary)
         log.debug("len of dictionary {}".format(sample_set.dict_len))
+        return sample_set
+
+    def build_redis_dataset(self, sample_set):
+        # ints being in the input is hammering my output...
+        # this should fix that...
+        sample_set.count = collections.Counter(sample_set.content).most_common()
+        log.debug("adding words to redis {'word' : 'index'}")
+        sample_set.dict_len = 0
+        sample_set.num_converted = 0
+        sample_set.converted = []
+        for word, _ in sample_set.count:
+            cur_len = sample_set.dict_len
+            #if isinstance(word, int) or isinstance(word, float):
+            try:
+                word = float(word)
+                word_ = self.p.number_to_words(int(word))
+                sample_set.num_converted += 1
+                sample_set.converted.append((word, word_))
+                word = word_
+            except:
+                pass
+            self.database.write_data(str(word), int(cur_len))
+            self.rev_dict.write_data(int(cur_len), str(word))
+            #self.database.set_wordposition(str(word), int(cur_len))
+            sample_set.dict_len += 1
+        log.debug("len of dictionary {}".format(sample_set.dict_len))
+        log.debug("Num Converted words {}".format(sample_set.num_converted))
+        # print(sample_set.converted)
         return sample_set
 
     def new_weights(self, shape):
@@ -240,8 +266,8 @@ class App(object):
         # DEFINES!!
         training_data = sample_set.content
 
-        dictionary = sample_set.dictionary
-        reverse_dictionary = sample_set.reverse_dictionary
+        # dictionary = sample_set.dictionary
+        # reverse_dictionary = sample_set.reverse_dictionary
         n_input = self.n_input
         vocab_size = sample_set.dict_len
 
@@ -255,7 +281,7 @@ class App(object):
         end_offset = n_input + 1
         acc_total = 0
         loss_total = 0
-        display_step = 200
+        display_step = 1
         pred_msg = ' "{}" *returns* "{}" *vs* "{}"\n'
         msg = "step: {0:}, offset: {1:}, acc_total: {2:.2f}, loss_total: {3:.2f}"
         log.debug("Starting the Train Session:")
@@ -265,13 +291,16 @@ class App(object):
         while _step < self.train_iters:
             # Generate a minibatch. Add some randomness on selection process.
             if offset > (len(training_data) - end_offset):
-                offset = random.randint(0, n_input + 1)
-
-            symbols_in_keys = [[dictionary[str(training_data[i])]] for i in range(offset, offset + n_input)]
+                offset = random.randint(0, self.n_input + 1)
+            symbols_in_keys = []
+            for i in range(offset, offset + self.n_input):
+                symbols_in_keys.append(self.database.read_data(str(training_data[i])))
             symbols_in_keys = np.reshape(np.array(symbols_in_keys), [-1, n_input, 1])
 
             symbols_out_onehot = np.zeros([vocab_size], dtype=float)
-            symbols_out_onehot[dictionary[str(training_data[offset + n_input])]] = 1.0
+            # symbols_out_onehot[dictionary[str(training_data[offset + n_input])]] = 1.0
+            one_hot = self.database.read_data(str(training_data[offset + n_input]))
+            symbols_out_onehot[int(one_hot)] = 1.0
             symbols_out_onehot = np.reshape(symbols_out_onehot, [1, -1])
 
             feed_dict = {network.input_word: symbols_in_keys,
@@ -296,7 +325,7 @@ class App(object):
                 # gather datas
                 symbols_in = [training_data[i] for i in range(offset, offset + n_input)]
                 symbols_out = training_data[offset + n_input]
-                symbols_out_pred = reverse_dictionary[int(tf.argmax(onehot_pred, 1).eval(session=session))]
+                symbols_out_pred = self.rev_dict.read_data(int(tf.argmax(onehot_pred, 1).eval(session=session)))
                 # do save actions
                 log.info("Saving the Train Session:\n{}\n{}".format(msg.format(_step,
                                                                                offset,
@@ -304,15 +333,20 @@ class App(object):
                                                                                loss_total),
                                                                     pred_msg.format(symbols_in, symbols_out,
                                                                                     symbols_out_pred)))
+                # Save Functions
                 network.saver.save(session, self.logs_path, global_step=_step)
                 writer.add_summary(summary, global_step=_step)
-                #projector.visualize_embeddings(writer, network.config)
+                projector.visualize_embeddings(writer, network.config)
                 # reset the pooling counters
                 acc_total = 0
                 loss_total = 0
             # end of loop increments
             network.global_step += 1
             offset += (n_input + 1)
+        # Save Functions
+        network.saver.save(session, self.logs_path, global_step=_step)
+        writer.add_summary(summary, global_step=_step)
+        projector.visualize_embeddings(writer, network.config)
         log.info("Optimization Finished!")
         log.debug("Elapsed time: {}".format(elapsed(time.time() - start_time)))
         return(loss_total, acc_total)

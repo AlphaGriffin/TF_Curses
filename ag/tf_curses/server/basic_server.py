@@ -28,13 +28,25 @@ class Sock_Server(object):
         self.host = host
         self.hostport = port
         self.service = service
+        if service is not None:
+            if self.start_service(): pass
+            else:
+                log.warn("Boogers... service not started.")
+
+    def start_service(self):
+        log.debug("")
+        if self.service.load_tf_model():
+            if self.service.load_model_params():
+                if self.service.params.test is "okay":
+                    log.info("Params Loaded.")
+                    return True
 
     def handle(self, input_string):
         """A String Parser / Decider"""
         log.debug(input_string)
         if input_string == 'services':
             if self.service:
-                response = self.service.talk(input_string)
+                response = self.service.service_name
                 return response
             else:
                 return "No Services Running"
@@ -44,13 +56,19 @@ class Sock_Server(object):
             else:
                 return "No Services Running"
         if input_string == 'find /path/':
-            return "fount /path/to/thing"
-        else:
-            x = self.service.talk(input_string)
+            return "found /path/to/thing"
+        if input_string[:2] == 'x=':
+            x = self.service.talk(input_string[2:])
             return x
+
+        else:
+            return "static... fuzz..."
 
     def client_thread(self, conn, ip, port, mbs=4096):
         """This is the manager of the input calls"""
+        def logout(conn):
+            return conn.close()
+
         input_from_client_bytes = conn.recv(mbs)
         siz = sys.getsizeof(input_from_client_bytes)
         if siz >= mbs:
@@ -58,12 +76,14 @@ class Sock_Server(object):
 
         # decode input and strip the end of line
         input_from_client = input_from_client_bytes.decode("utf8").rstrip()
+        if 'close' in input_from_client:
+            logout(conn)
         res = self.handle(input_from_client)
-        log.info("Result of processing {} is: {}".format(input_from_client, res))
+        log.info("Result of processing:\n\t{}\nis:\n\t{}".format(input_from_client, res))
 
         vysl = res.encode("utf8")  # encode the result string
         conn.sendall(vysl)  # send it to client
-        conn.close()  # close connection
+
         log.info('Connection ' + ip + ':' + port + " ended")
 
     def start_server(self):
@@ -73,11 +93,11 @@ class Sock_Server(object):
         log.info('Socket created')
 
         try:
-            soc.bind(("127.0.0.1", 12345))
+            soc.bind(("localhost", 12345))
             log.info('Socket bind complete')
         except socket.error as msg:
             log.info('Bind failed. Error : ' + str(sys.exc_info()))
-            sys.exit()
+            #sys.exit()
         soc.listen(10)
         log.info('Socket now listening')
         while True:
