@@ -192,9 +192,14 @@ class App(object):
         x = tf.split(x, self.n_input, 1)
         cells = []
         for i in range(num_layers):
-            cells.append(tf.contrib.rnn.BasicLSTMCell(self.n_hidden))
-        rnn_cell = tf.contrib.rnn.MultiRNNCell(cells)
-        outputs, states = tf.contrib.rnn.static_rnn(rnn_cell, x, dtype=tf.float32)
+            cells.append(tf.contrib.rnn.LSTMCell(self.n_hidden))
+        encoder_cell = tf.contrib.rnn.MultiRNNCell(cells)
+        # outputs, states = tf.contrib.rnn.static_rnn(rnn_cell, x, dtype=tf.float32)
+        tf.nn.bidirectional_dynamic_rnn(cell_fw=encoder_cell,
+                                        cell_bw=encoder_cell,
+                                        inputs=encoder_inputs_embedded,
+                                        sequence_length=encoder_inputs_length,
+                                        dtype=tf.float32, time_major=True)
 
         weight = self.new_weights(dict_len)
         # You can add multiple embeddings. Here we add only one.
@@ -208,6 +213,37 @@ class App(object):
         tf.summary.histogram('bias', bias)
         a_tensorflow_layer = tf.matmul(outputs[-1], weight) + bias
         return a_tensorflow_layer
+
+    def build_seq2seq(self, sample_set):
+        class training_ops(): pass
+
+        training_ops.encoder_inputs = tf.placeholder(shape=(None, None), dtype=tf.int32, name='encoder_inputs')
+        training_ops.encoder_inputs_length = tf.placeholder(shape=(None,), dtype=tf.int32, name='encoder_inputs_length')
+        training_ops.decoder_targets = tf.placeholder(shape=(None, None), dtype=tf.int32, name='decoder_targets')
+
+        training_ops.embeddings = tf.Variable(tf.random_uniform([sample_set.vocab_size, sample_set.input_embedding_size], -1.0, 1.0), dtype=tf.float32)
+        training_ops.encoder_inputs_embedded = tf.nn.embedding_lookup(training_ops.embeddings, training_ops.encoder_inputs)
+        training_ops.decoder_inputs_embedded = tf.nn.embedding_lookup(training_ops.embeddings, training_ops.decoder_inputs)
+
+        training_ops.encoder_cell = tf.contrib.rnn.LSTMCell(self.n_hidden)
+
+        training_ops.encoder_outputs, training_ops.encoder_final_state = tf.nn.dynamic_rnn(
+            training_ops.encoder_cell, training_ops.encoder_inputs_embedded,
+            dtype=tf.float32, time_major=True,
+        )
+
+        del training_ops.encoder_outputs
+
+        training_ops.decoder_cell = tf.contrib.rnn.LSTMCell(decoder_hidden_units)
+
+        training_ops.decoder_outputs, training_ops.decoder_final_state = tf.nn.dynamic_rnn(
+            training_ops.decoder_cell, training_ops.decoder_inputs_embedded,
+            initial_state=training_ops.encoder_final_state,
+            dtype=tf.float32, time_major=True, scope="plain_decoder",
+        )
+
+        training_ops.decoder_logits = tf.contrib.layers.linear(training_ops.decoder_outputs, vocab_size)
+        return training_ops
 
     def build_network(self, sample_set):
         class training_ops(): pass
