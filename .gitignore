@@ -24,4 +24,7 @@ TF_Curses.egg-info/
 *.txt
 *.log
 
+# bad ideas
+/website
+
 

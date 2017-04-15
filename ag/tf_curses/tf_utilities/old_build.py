@@ -25,7 +25,7 @@ from tensorflow.contrib.tensorboard.plugins import projector
 import numpy as np
 import ag.logging as log
 import database_interface as DB
-log.set(log.DEBUG)
+log.set(5)
 
 def elapsed(sec):
     if sec<60:
@@ -38,16 +38,15 @@ def elapsed(sec):
 
 class App(object):
     def __init__(self):
-        root_path = '/home/eric/repos/pycharm_repos/TF_Curses'
+        root_path = '/home/eric/repos/pycharm_repos/'
         self.database = DB.Database(db=0)
         self.rev_dict = DB.Database(db=1)
         self.p = inflect.engine()
         self.n_input = 3
         self.n_hidden = 512
-        self.logs_path = '/pub/models/chatbot/chatbot/alphagriffin'
-        self.train_iters = int(5e1)
+        self.logs_path = '/pub/models/chatbot/chatbot'
+        self.train_iters = int(5e4)
         self.converter = inflect.engine()
-        self.sess = None
 
     def main(self, args):
         log.info("TESTRUN -")
@@ -70,12 +69,7 @@ class App(object):
 
         # build a tensorboard
         log.info("build tensorflow network")
-        log.debug("Trying to Load Old Model")
-        if self.load_tf_model(self.logs_path):
-            network = self.load_model_params()
-        else:
-            log.debug("Creating a New Model")
-            network = self.build_network(sample_set)
+        network = self.build_network(sample_set)
         log.debug("Working with Final Layer {}".format(network.final_layer))
 
         # do some work
@@ -159,8 +153,8 @@ class App(object):
         log.debug("adding words to redis {'word' : 'index'}")
         sample_set.dict_len = 0
         sample_set.num_converted = 0
-        sample_set.num_to_dict = 0
         sample_set.converted = []
+        sample_set.added = 0
         for word, _ in sample_set.count:
             cur_len = sample_set.dict_len
             #if isinstance(word, int) or isinstance(word, float):
@@ -173,19 +167,17 @@ class App(object):
             except:
                 pass
 
-            # FIX ME... SEARCH FOR OLD REFERENCE FIRST!
-            # this is broken
-            if self.database.read_data(word) is cur_len:
-                pass
-            else:
+            check = self.database.read_data(word)
+            if check is not cur_len:
                 self.database.write_data(str(word), int(cur_len))
                 self.rev_dict.write_data(int(cur_len), str(word))
-                sample_set.num_to_dict += 1
+            else:
+                sample_set.added += 1
             #self.database.set_wordposition(str(word), int(cur_len))
             sample_set.dict_len += 1
         log.debug("len of dictionary {}".format(sample_set.dict_len))
         log.debug("Num Converted words {}".format(sample_set.num_converted))
-        log.debug("Num  words added to database {}".format(sample_set.num_to_dict))
+        log.debug("Num added words {}".format(sample_set.added))
         # print(sample_set.converted)
         return sample_set
 
@@ -269,13 +261,11 @@ class App(object):
         training_ops.optimizer = tf.train.RMSPropOptimizer(learning_rate=training_ops.learn_rate) \
                                                             .minimize(training_ops.cost)
 
-
+        tf.add_to_collection("optimizer", training_ops.optimizer)
         training_ops.init_op = tf.global_variables_initializer()
-        tf.add_to_collection("init_op", training_ops.init_op)
         training_ops.saver = tf.train.Saver()
-        tf.add_to_collection("saver", training_ops.saver)
         training_ops.merged = tf.summary.merge_all()
-        tf.add_to_collection("merged", training_ops.merged)
+        # projector.visualize_embeddings(summary_writer, config)
         return training_ops
 
     def process_network(self, sample_set, network):
@@ -290,10 +280,7 @@ class App(object):
 
         # start here
         start_time = time.time()
-        if self.sess:
-            session = self.sess
-        else:
-            session = tf.Session()
+        session = tf.Session()
         session.run(network.init_op)
         writer = tf.summary.FileWriter(self.logs_path)
         _step = 0
@@ -301,7 +288,7 @@ class App(object):
         end_offset = n_input + 1
         acc_total = 0
         loss_total = 0
-        display_step = 10
+        display_step = 1000
         pred_msg = ' "{}" *returns* "{}" *vs* "{}"\n'
         msg = "step: {0:}, offset: {1:}, acc_total: {2:.2f}, loss_total: {3:.2f}"
         log.debug("Starting the Train Session:")
@@ -320,16 +307,13 @@ class App(object):
             symbols_out_onehot = np.zeros([vocab_size], dtype=float)
             # symbols_out_onehot[dictionary[str(training_data[offset + n_input])]] = 1.0
             one_hot = self.database.read_data(str(training_data[offset + n_input]))
-            if one_hot is None:
-                one_hot = 0
             symbols_out_onehot[int(one_hot)] = 1.0
             symbols_out_onehot = np.reshape(symbols_out_onehot, [1, -1])
 
             feed_dict = {network.input_word: symbols_in_keys,
                          network.input_label: symbols_out_onehot}
 
-            try:
-                _, acc, loss, onehot_pred, _step, summary = session.run([network.optimizer,
+            _, acc, loss, onehot_pred, _step, summary = session.run([network.optimizer,
                                                                      network.accuracy,
                                                                      network.cost,
                                                                      network.final_layer,
@@ -338,42 +322,34 @@ class App(object):
                                                                      ],
                                                                     feed_dict=feed_dict)
 
-
-                # pool data results
-                loss_total += loss
-                acc_total += acc
-                if (_step + 1) % display_step == 0:
-                    # acc pool
-                    acc_total = (acc_total * 100) / display_step
-                    loss_total = loss_total / display_step
-                    # gather datas
-                    try:
-                        symbols_in = [training_data[i] for i in range(offset, offset + n_input)]
-                        symbols_out = training_data[offset + n_input]
-                        symbols_out_pred = self.rev_dict.read_data(int(tf.argmax(onehot_pred, 1).eval(session=session)))
-                        # do save actions
-                        log.info("Saving the Train Session:\n{}\n{}".format(msg.format(_step,
-                                                                                       offset,
-                                                                                       acc_total,
-                                                                                       loss_total),
-                                                                            pred_msg.format(symbols_in, symbols_out,
-                                                                                            symbols_out_pred)))
-                    except Exception as e:
-                        log.warn("Bad Things are happening here: {}\n\t{}\n{}".format(elapsed(time.time() - start_time), e))
-                        pass
-                    # Save Functions
-                    network.saver.save(session, self.logs_path, global_step=_step)
-                    writer.add_summary(summary, global_step=_step)
-                    projector.visualize_embeddings(writer, network.config)
-                    # reset the pooling counters
-                    acc_total = 0
-                    loss_total = 0
-                # end of loop increments
-                network.global_step += 1
-                offset += (n_input + 1)
-            except Exception as e:
-                log.warn("BLowing it DUDE... {}\nError: {}".format(_step, e))
-                pass
+            # pool data results
+            loss_total += loss
+            acc_total += acc
+            if (_step + 1) % display_step == 0:
+                # acc pool
+                acc_total = (acc_total * 100) / display_step
+                loss_total = loss_total / display_step
+                # gather datas
+                symbols_in = [training_data[i] for i in range(offset, offset + n_input)]
+                symbols_out = training_data[offset + n_input]
+                symbols_out_pred = self.rev_dict.read_data(int(tf.argmax(onehot_pred, 1).eval(session=session)))
+                # do save actions
+                log.info("Saving the Train Session:\n{}\n{}".format(msg.format(_step,
+                                                                               offset,
+                                                                               acc_total,
+                                                                               loss_total),
+                                                                    pred_msg.format(symbols_in, symbols_out,
+                                                                                    symbols_out_pred)))
+                # Save Functions
+                network.saver.save(session, self.logs_path, global_step=_step)
+                writer.add_summary(summary, global_step=_step)
+                projector.visualize_embeddings(writer, network.config)
+                # reset the pooling counters
+                acc_total = 0
+                loss_total = 0
+            # end of loop increments
+            network.global_step += 1
+            offset += (n_input + 1)
         # Save Functions
         network.saver.save(session, self.logs_path, global_step=_step)
         writer.add_summary(summary, global_step=_step)
@@ -382,58 +358,6 @@ class App(object):
         log.debug("Elapsed time: {}".format(elapsed(time.time() - start_time)))
         return(loss_total, acc_total)
         session.close()
-
-    def load_tf_model(self, folder=None):
-        if folder is None: folder = self.logs_path
-        log.info("Loading Model: {}".format("Model_Name"))
-        if self.sess:
-            self.sess.close()
-        try:
-            self.sess = tf.InteractiveSession()
-            checkpoint_file = tf.train.latest_checkpoint(folder)
-            log.info("trying: {}".format(checkpoint_file))
-            new_saver = tf.train.import_meta_graph(checkpoint_file + ".meta")
-            log.debug("loading modelfile {}".format(folder))
-            new_saver.restore(self.sess, checkpoint_file)
-            log.info("model successfully Loaded: {}".format(folder))
-            self.model_loaded = True
-        except Exception as e:
-            log.warn("This folder failed to produce a model {}\n{}".format(folder, e))
-            return False
-        return True
-
-    def load_model_params(self):
-        log.info("Loading Model Params")
-        class params(object): pass
-        params.list_all_ops = [n.name for n in tf.get_default_graph().as_graph_def().node]
-        log.debug("Num ops in model: {}".format(len(params.list_all_ops)))
-        params.final_layer = tf.get_collection_ref('final_layer')[0]
-        #log.debug("Found Final Layer: {}".format(params.final_layer))
-        params.input_tensor = tf.get_collection_ref('input_word')[0]
-        #log.debug("Found input tensor: {}".format(params.input_tensor))
-        params.input_label = tf.get_collection_ref('input_label')[0]
-        #log.debug("Found input label: {}".format(params.input_label))
-        params.global_step = tf.get_collection_ref('global_step')[0]
-        #log.debug("Found global_step: {}".format(params.global_step))
-        params.learn_rate = tf.get_collection_ref('learn_rate')[0]
-        #log.debug("Found learn_rate: {}".format(params.learn_rate))
-        params.correct_pred = tf.get_collection_ref('correct_pred')[0]
-        #log.debug("Found correct_pred op: {}".format(params.correct_pred))
-        params.accuracy = tf.get_collection_ref('accuracy')[0]
-        #log.debug("Found accuracy op: {}".format(params.accuracy))
-        params.cost = tf.get_collection_ref('cost')[0]
-        #log.debug("Found cost op: {}".format(params.cost))
-        params.optimizer = tf.get_collection_ref('optimizer')[0]
-        #log.debug("Found optimizer op: {}".format(params.optimizer))
-        params.init_op = tf.get_collection_ref('init_op')[0]
-        # log.debug("Found init_op op: {}".format(params.init_op))
-        params.saver = tf.get_collection_ref('saver')[0]
-        # log.debug("Found saver op: {}".format(params.saver))
-        params.merged = tf.get_collection_ref('merged')[0]
-        # log.debug("Found merged op: {}".format(params.merged))
-        params.test = "okay"
-        self.params = params
-        return params
 
 
 if __name__ == '__main__':

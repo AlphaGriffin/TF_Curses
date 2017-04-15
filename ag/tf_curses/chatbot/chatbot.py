@@ -117,7 +117,7 @@ class chatbot(object):
 
 
 class tf_chatbot(object):
-    def __init__(self, database, init=False):
+    def __init__(self, database, init=False, user=None, Session=None):
         self.__service_name__ = 'Chatbot'
         self.dictionary = database[0]
         self.rev_dictionary = database[1]
@@ -125,10 +125,14 @@ class tf_chatbot(object):
         self.sess = None
         self.model_loaded = False
         self.params = None
+        self.user = user
+        self.Session = Session
 
     @property
     def servcie_name(self):
         return self.__service_name__
+
+
 
     def main(self):
         log.info("beginning chabot test")
@@ -215,8 +219,13 @@ class tf_chatbot(object):
         # x = tf.placeholder("float", [None, 3, 1])
         feed_dict = {self.params.input_tensor: keys}
         onehot_pred = self.sess.run(self.params.final_layer, feed_dict=feed_dict)
-        onehot_pred_index = int(tf.argmax(onehot_pred, 1).eval(session=self.sess))
-        new_word = self.rev_dictionary.read_data(onehot_pred_index)
+
+        thing = tf.argmax(onehot_pred, 1)
+        #log.debug("{}".format(thing))
+        ohpi = self.sess.run(thing)
+        log.debug("{}".format(ohpi))
+        # onehot_pred_index = int().eval(session=self.sess))
+        new_word = self.rev_dictionary.read_data(ohpi)
         return new_word
 
     def test_reponse(self, input_string):
