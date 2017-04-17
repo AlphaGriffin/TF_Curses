@@ -16,4 +16,4 @@ __maintainer__ = "Eric Petersen"
 __email__ = "ruckusist@alphagriffin.com"
 __status__ = "Prototype"
 
-print("Alpha Griffin TF_Curses Project")
+# print("Alpha Griffin TF_Curses Project")
