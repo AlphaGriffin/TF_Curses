@@ -24,6 +24,7 @@ import ag.tf_curses.chatbot.chatbot as chatbot
 import ag.tf_curses.server.tf_server as tf_server
 import ag.tf_curses.database.database_interface as db
 from ag.tf_curses.frontend.curses_frontend import Window as Curses
+import ag.tf_curses.server.flask_server as flasker
 
 def TF_Server(host, tf_port):
     try:
@@ -71,7 +72,8 @@ def old_main():
 
     log.info("Starting Chat Server:\t{}:{}".format(host, chat_port))
     chat_service = Chatbot(db_)
-    Sock_Server(host, chat_port, chat_service)
+#    Sock_Server(host, chat_port, chat_service)
+    server = flasker.FlaskServer(host, chat_port, chat_service)
     log.debug("started sock server")
 
     log.info("Starting Tensorflow Server:\t{}:{}".format(host, tf_port))
