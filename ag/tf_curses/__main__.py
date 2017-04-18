@@ -97,6 +97,10 @@ class TF_Curses(object):
     def __init__(self, options):
         self.running = True
         self.options = options
+        self.errors = []
+        self.working_panels = []
+        self.cur = 0
+        self.menu = ["thing1 ", "thing2", "about"]
 
     @property
     def is_running(self):
@@ -107,11 +111,11 @@ class TF_Curses(object):
         if frame is 'curses':
             self.frontend = Curses()
             # TODO: setup main window
-            self.frontend.screen.addstr(4,4, "press q to exit.",
-                                        self.frontend.color_rw)
+            self.frontend.main_screen()
+            self.frontend.header[0].addstr(1, 1, __copyright__)
+            #self.frontend.header[0].refresh()
 
-    def start_backend(self):
-        log.debug("Starting Backend")
+    def start_backend(self): pass
 
     def main_loop(self):
         self.frontend.refresh()
@@ -121,42 +125,82 @@ class TF_Curses(object):
         except:
             keypress = 0
             pass
-        if keypress is not 0:
+        if keypress > 0:
+            self.errors.append(("keypress: ", keypress))
             self.decider(keypress)
         ###
         # TODO: do other stuff
         ###
 
     def decider(self, keypress):
-        log.info("got this {} type {}".format(keypress, type(keypress)))
+        # log.info("got this {} type {}".format(keypress, type(keypress)))
         # main decider functionality!
         try:
             if keypress is 113 or keypress is 1 or keypress is 27:
                 command_text = """Exit Command:
-                q command pressed... also want:
-                ctrl+q, ctrl+x, ctrl+esc
-                """
-                log.debug(command_text)
+                                q command pressed... also want:
+                                ctrl+q, ctrl+x, ctrl+esc
+                                """
+                self.errors.append(command_text)
                 self.running = False
                 pass
-            elif input == '':
+            if keypress == 338:
+                command_text = """Page Down:
+                                Change Selected Window
+                                """
+                self.errors.append(command_text)
+                if self.cur < len(self.menu) - 1:
+                    self.cur += 1
+                else:
+                    self.cur = 0
+                self.selector()
+                pass
+
+            if keypress == 339:
+                command_text = """Page Up:
+                                Change Selected Window
+                                """
+                self.errors.append(command_text)
+                if self.cur > 0:
+                    self.cur -= 1
+                else:
+                    self.cur = len(self.menu)-1
+                self.selector()
                 pass
             else:
-                log.error('Unknown Connand Function')
+                # log.error('Unknown Connand Function')
                 pass
         finally:
             pass
 
+    def selector(self):
+        self.frontend.redraw_window(self.frontend.winleft)
+        for index, item in enumerate(self.menu):
+            if self.cur == index:
+                self.frontend.winleft[0].addstr(index+1, 1, item, self.frontend.color_rw)
+            else:
+                self.frontend.winleft[0].addstr(index+1, 1, item, self.frontend.color_cb)
+        self.working_panels[self.cur][1].top()
+
+    def working_panel(self):
+        for index, item in enumerate(self.menu):
+            self.working_panels.append(self.frontend.make_panel(self.frontend.winright_dims, item))
+
     def main(self):
         self.start_frontend()
         self.start_backend()
+        self.working_panel()
+        self.selector()
         while self.is_running:
+            time.sleep(.05)
             self.main_loop()
         self.exit_safely()
 
     def exit_safely(self, msg=None):
         try:
             self.frontend.end_safely()
+            for i in self.errors:
+                print("Errors: {}".format(i))
             sys.exit("Supported by Alphagriffin.com\n{}".format(msg))
         except Exception as e:
             sys.exit("Supported by Alphagriffin.com\n{}".format(e))

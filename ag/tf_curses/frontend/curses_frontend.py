@@ -13,39 +13,36 @@ __maintainer__ = "Eric Petersen"
 __email__ = "ruckusist@alphagriffin.com"
 __status__ = "Prototype"
 
-import os, sys, time, datetime
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '5'
+import os, sys, time
 import curses
 import curses.panel
-import tensorflow as tf
 import ag.logging as log
-
-
-def get_time():
-    return datetime.datetime.now().replace(microsecond=0).isoformat().replace('T', ' ')
 
 
 class Window(object):
     def __init__(self, stdscr=None):
+        # this is passed with the Curses Wrapper for testing
         if stdscr is None:
             stdscr = curses.initscr()
         self.screen = stdscr
         curses.start_color()
         self.setup_color()
+
         curses.noecho()
         curses.cbreak()
         self.screen.keypad(1)
-        self.screen.box()
-        #title = "AGTFCP | 2017 | {}".format(get_time())
-        #sub_title = " Python: {} | Tensorflow: {} | TF_Curses: {}"
-        #stdscr.addstr(1, 2, title, self.color_cb)
-        #stdscr.addstr(2, 2, sub_title.format(sys.version[0], tf.__version__, __version__), self.color_cb)
-        #self.screen.hline(4, 10, curses.ACS_HLINE, 45)
-        #/eninit
+        # self.screen.box()
+        self.screen_h, self.screen_w = self.screen.getmaxyx()
 
     def get_input(self):
+        self.screen.nodelay(True)
         x = self.screen.getch()
-        log.debug("getting keypress {}".format(x))
+        # 410 is screen changing size
+        #if x is 410:
+        #    self.screen_h, self.screen_w = self.screen.getmaxyx()
+        #    self.screen.redrawwin()
+        #    return 0
+        #log.debug("getting keypress {}".format(x))
         return x
 
     def setup_color(self):
@@ -53,11 +50,17 @@ class Window(object):
         self.color_rw = curses.color_pair(1)
         curses.init_pair(2, curses.COLOR_CYAN, curses.COLOR_BLACK)
         self.color_cb = curses.color_pair(2)
+        self.color_bold = curses.A_BOLD
+        self.color_blink = curses.A_BLINK
+        self.color_error = self.color_bold | self.color_blink | self.color_rw
         return True
 
     def refresh(self):
-        curses.panel.update_panels()
+        # TODO: add screensize checker!
+        #
+        # curses.resizeterm(y, x)
         self.screen.refresh()
+        curses.panel.update_panels()
         return True
 
     def end_safely(self):
@@ -67,6 +70,28 @@ class Window(object):
         curses.endwin()
         return True
 
+    def main_screen(self):
+        h = self.screen_h
+        w = self.screen_w
+
+        header_dims = [3, w, 0, 0]
+        split = int(w / 2) - 1
+        winleft_dims = [h-3-4-3, split, 3, 0]
+        self.winright_dims = [h-3-4-3, w - split-1, 3, split + 1]
+        footer_dims = [3, w, h-3, 0]
+        debug_dims = [4, w, h-7, 0]
+        self.header = self.make_panel(header_dims, "header")
+        self.winleft = self.make_panel(winleft_dims, "options", True)
+        self.winright = self.make_panel(self.winright_dims, "screen", True)
+        self.debug = self.make_panel(debug_dims, "debugs", True)
+        self.footer = self.make_panel(footer_dims, "interface", True)
+        curses.panel.update_panels()
+        self.screen.addstr(h-1,w-9,"<{},{}>".format(h, w))
+        self.screen.refresh()
+
+
+
+    """
     def main_loop(self):
         # create panels
         text_panel = self.text_outpanel(8, 8)
@@ -89,21 +114,24 @@ class Window(object):
         win.box()
         win.addstr(2, 2, text)
         return panel
+    """
 
-    def make_panel(self, h, l, y, x, label, scroll=False):
-        win = curses.newwin(h, l, y, x)
-        win.erase()
-        win.box()
-        win.border(2)
-        # this should be true is addstring throws an error
+    def make_panel(self, dims, label, scroll=False):
+        win = curses.newwin(dims[0], dims[1], dims[2], dims[3])
         win.scrollok(scroll)
-        win.addstr(1, 1, str(label))
         panel = curses.panel.new_panel(win)
-        return win, panel
+        self.redraw_window([win, panel, label])
+        return win, panel, label
+
+    def redraw_window(self, win):
+        win[0].erase()
+        win[0].box()
+        win[0].addstr(0, 1, str("| {} |".format(win[2])))
+
 
     def main_test(self):
-        win1, panel1 = self.make_panel(10, 12, 5, 5, "Panel 1")
-        win2, panel2 = self.make_panel(10, 12, 8, 8, "Panel 2")
+        win1, panel1 = self.make_panel([10, 12, 5, 5], "Panel 1")
+        win2, panel2 = self.make_panel([10, 12, 8, 8], "Panel 2")
         curses.panel.update_panels()
         self.screen.refresh()
         time.sleep(1)

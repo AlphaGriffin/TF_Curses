@@ -40,10 +40,10 @@ if __name__ == '__main__':
         author='Ruckusist @ Alpha Griffin',
         author_email='ruckusist@alphagriffin.com',
 
-        description='Tensorflow Training User Interface for Distributed Networks',
+        description='Tensorflow User Interface for Distributed Networks',
 
         long_description=open('README.rst').read(),
-        url='http://github.com ruckusist.tf_curses',
+        url='http://github.com/alphagriffin/tf_curses',
 
         # @see https://pypi.python.org/pypi?%3Aaction=list_classifiers
         classifiers=[
@@ -66,19 +66,17 @@ if __name__ == '__main__':
         ],
 
         # space-separated list of keywords
-        keywords='alphagriffin tensorflow utilities curses ui user interface text urwid',
+        keywords='alphagriffin tensorflow utilities curses ui user interface text',
         platforms="unix-like",
 
         # run-time dependencies
         # twisted is a threading program... will be upgraded to soon.
         install_requires=['setuptools',
-                          'twisted',
-                          'tqdm',
-                          'urwid',
                           'tensorflow-gpu',
                           'numpy',
+                          'flask',
+                          'redis',
                           # 'ag.logging',
-                          # 'curses',
                           ],  # setuptools here for example only (it's implied)
 
         extras_require={
