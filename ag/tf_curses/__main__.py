@@ -100,7 +100,7 @@ class TF_Curses(object):
         self.errors = []
         self.working_panels = []
         self.cur = 0
-        self.menu = ["thing1 ", "thing2", "about"]
+        self.menu = ["TF_Server ", "Database", "Chatbot", "Web Server"]
 
     @property
     def is_running(self):
@@ -116,6 +116,18 @@ class TF_Curses(object):
             #self.frontend.header[0].refresh()
 
     def start_backend(self): pass
+
+    def TF_Server(host):
+        try:
+            log = []
+            p = self.options.tf_port
+            self.tfserver = tf_server.tfserver(log)
+            Thread(target=self.tfserver.start_server).start()
+        except:
+            log.error("TF_worker Failed To Start. or is Running")
+        self.errors.append(self.tfserver.log)
+        for index, item in enumerate(reversed(self.tfserver.log)):
+            self.working_panel[0][0].addstr(index,1,"{}: {}".format(index, item))
 
     def main_loop(self):
         self.frontend.refresh()
@@ -137,8 +149,11 @@ class TF_Curses(object):
         ###
 
     def string_decider(self, string):
-        self.working_panels[self.cur][0].addstr(1, 1, string)
-
+        if 'stop' in string:
+            self.working_panels[self.cur][0].addstr(5, 5, "Stoping Service: {}".format(self.menu[self.cur]))
+        else:
+            self.working_panels[self.cur][0].addstr(1, 1, string)
+        self.selector()
 
     def decider(self, keypress):
         # log.info("got this {} type {}".format(keypress, type(keypress)))
@@ -158,14 +173,18 @@ class TF_Curses(object):
 
                 self.selector()
                 pass
+            elif keypress == 10:
+                command_text = """Enter Command:
+                                Start this service
+                                """
+                self.working_panels[self.cur][0].addstr(5,5,"Starting Service: {}".format(self.menu[self.cur]))
+                pass
             elif keypress == 9:
                 command_text = """Tab Command:
                                 Switch Key Mode
                                 """
                 if self.frontend.screen_mode:
                     self.frontend.screen_mode = False
-                else:
-                    self.frontend.screen_mode = True
                 self.selector()
                 pass
             elif keypress == 258:
@@ -219,12 +238,12 @@ class TF_Curses(object):
                 self.frontend.winleft[0].addstr(index+1, 1, item, self.frontend.color_cb)
         self.working_panels[self.cur][1].top()
         if self.frontend.screen_mode:
-            options = ["|q| to quit   |Tab| switch Mode", "|pgUp| change menu |pgDn| change menu"]
+            options = ["|q| to quit   |Tab| switch Mode   |enter| to start service", "|pgUp| change menu |pgDn| change menu"]
             self.frontend.redraw_window(self.frontend.debug)
             self.frontend.debug[0].addstr(1, 1, options[0], self.frontend.color_gb)
             self.frontend.debug[0].addstr(2, 1, options[1], self.frontend.color_gb)
         else:
-            options = ["|q| to quit   |Tab| switch Mode", "|enter| submit"]
+            options = ["|q| to quit   |Tab| switch Mode", "|enter| submit   |'stop'| to kill service"]
             self.frontend.redraw_window(self.frontend.debug)
             self.frontend.debug[0].addstr(1, 1, options[0], self.frontend.color_gb)
             self.frontend.debug[0].addstr(2, 1, options[1], self.frontend.color_gb)
@@ -233,8 +252,6 @@ class TF_Curses(object):
         # this is only run 1 time during setup
         for index, item in enumerate(self.menu):
             self.working_panels.append(self.frontend.make_panel(self.frontend.winright_dims, item, True))
-            #self.working_panels[self.cur].options =
-
 
     def main(self):
         self.start_frontend()

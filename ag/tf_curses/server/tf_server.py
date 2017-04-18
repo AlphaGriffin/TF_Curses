@@ -17,29 +17,23 @@ __maintainer__ = "Eric Petersen"
 __email__ = "ruckusist@alphagriffin.com"
 __status__ = "Prototype"
 
-print("Alpha Griffin TF_Curses Project")
-
 import sys
 from time import sleep
-from threading import Thread
 import ag.logging as log
 import tensorflow as tf
 
 
-
 class tfserver(object):
-    def __init__(self):
-        pass
+    def __init__(self, logz=None):
+        self.log = logz
 
     def start_server(self):
         host = 'genruckus'  # os . gethost
         port_s = '2222'
-        # port_w = '2223'
         name = 'AlphaGriffin_TF_Server'
         cluster = tf.train.ClusterSpec({name: ["{}:{}".format(host, port_s)]})
-        server = tf.train.Server(cluster, job_name=name, task_index=0)
-        print("TFSERVER IS UP!")
-
+        tf.train.Server(cluster, job_name=name, task_index=0)
+        self.log = "{}-{}:{} Started".format(name, host, port_s)
 
 
 if __name__ == '__main__':
