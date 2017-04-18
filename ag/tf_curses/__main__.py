@@ -125,26 +125,64 @@ class TF_Curses(object):
         except:
             keypress = 0
             pass
-        if keypress > 0:
+        try:
+            if keypress > 0:
+                self.errors.append(("keypress: ", keypress))
+                self.decider(keypress)
+        except:
             self.errors.append(("keypress: ", keypress))
-            self.decider(keypress)
+            self.string_decider(keypress)
         ###
         # TODO: do other stuff
         ###
+
+    def string_decider(self, string):
+        self.working_panels[self.cur][0].addstr(1, 1, string)
+
 
     def decider(self, keypress):
         # log.info("got this {} type {}".format(keypress, type(keypress)))
         # main decider functionality!
         try:
-            if keypress is 113 or keypress is 1 or keypress is 27:
+            if keypress is 113 or keypress is 1:
                 command_text = """Exit Command:
-                                q command pressed... also want:
-                                ctrl+q, ctrl+x, ctrl+esc
+                                q command pressed.
                                 """
                 self.errors.append(command_text)
                 self.running = False
                 pass
-            if keypress == 338:
+            elif keypress is 'test':
+                command_text = """Test Command:
+                                Switch Key Mode
+                                """
+
+                self.selector()
+                pass
+            elif keypress == 9:
+                command_text = """Tab Command:
+                                Switch Key Mode
+                                """
+                if self.frontend.screen_mode:
+                    self.frontend.screen_mode = False
+                else:
+                    self.frontend.screen_mode = True
+                self.selector()
+                pass
+            elif keypress == 258:
+                command_text = """scroll Command:
+                                Roll Active window
+                                """
+                self.working_panels[self.cur][0].scroll(-1)
+                self.frontend
+                pass
+            elif keypress == 259:
+                command_text = """scroll Command:
+                                Roll Active window
+                                """
+                self.errors.append(command_text)
+                self.working_panels[self.cur][0].scroll(1)
+                pass
+            elif keypress == 338:
                 command_text = """Page Down:
                                 Change Selected Window
                                 """
@@ -155,8 +193,7 @@ class TF_Curses(object):
                     self.cur = 0
                 self.selector()
                 pass
-
-            if keypress == 339:
+            elif keypress == 339:
                 command_text = """Page Up:
                                 Change Selected Window
                                 """
@@ -181,10 +218,23 @@ class TF_Curses(object):
             else:
                 self.frontend.winleft[0].addstr(index+1, 1, item, self.frontend.color_cb)
         self.working_panels[self.cur][1].top()
+        if self.frontend.screen_mode:
+            options = ["|q| to quit   |Tab| switch Mode", "|pgUp| change menu |pgDn| change menu"]
+            self.frontend.redraw_window(self.frontend.debug)
+            self.frontend.debug[0].addstr(1, 1, options[0], self.frontend.color_gb)
+            self.frontend.debug[0].addstr(2, 1, options[1], self.frontend.color_gb)
+        else:
+            options = ["|q| to quit   |Tab| switch Mode", "|enter| submit"]
+            self.frontend.redraw_window(self.frontend.debug)
+            self.frontend.debug[0].addstr(1, 1, options[0], self.frontend.color_gb)
+            self.frontend.debug[0].addstr(2, 1, options[1], self.frontend.color_gb)
 
     def working_panel(self):
+        # this is only run 1 time during setup
         for index, item in enumerate(self.menu):
-            self.working_panels.append(self.frontend.make_panel(self.frontend.winright_dims, item))
+            self.working_panels.append(self.frontend.make_panel(self.frontend.winright_dims, item, True))
+            #self.working_panels[self.cur].options =
+
 
     def main(self):
         self.start_frontend()
