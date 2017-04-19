@@ -51,9 +51,9 @@ class Window(object):
         return x
 
     def setup_color(self):
-        curses.init_pair(1, curses.COLOR_BLUE, curses.COLOR_BLACK)
+        curses.init_pair(1, curses.COLOR_WHITE, curses.COLOR_BLACK)
         self.color_rw = curses.color_pair(1)
-        curses.init_pair(2, curses.COLOR_CYAN, curses.COLOR_BLACK)
+        curses.init_pair(2, curses.COLOR_MAGENTA, curses.COLOR_BLACK)
         self.color_cb = curses.color_pair(2)
         curses.init_pair(3, curses.COLOR_GREEN, curses.COLOR_BLACK)
         self.color_gb = curses.color_pair(3)

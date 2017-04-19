@@ -19,7 +19,7 @@ import socket
 import os
 import traceback
 import ag.logging as log
-log.set(5)
+# log.set(0)
 
 
 class Sock_Server(object):
@@ -30,20 +30,20 @@ class Sock_Server(object):
         self.service = service
         if service is not None:
             if self.start_service(): pass
-            else:
-                log.warn("Boogers... service not started.")
+            else: pass
+                # log.warn("Boogers... service not started.")
 
     def start_service(self):
         log.debug("")
         if self.service.load_tf_model():
             if self.service.load_model_params():
                 if self.service.params.test is "okay":
-                    log.info("Params Loaded.")
+                    #log.info("Params Loaded.")
                     return True
 
     def handle(self, input_string):
         """A String Parser / Decider"""
-        log.debug(input_string)
+        #log.debug(input_string)
         if input_string == 'services':
             if self.service:
                 response = self.service.service_name

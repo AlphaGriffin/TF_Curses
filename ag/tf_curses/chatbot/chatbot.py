@@ -22,7 +22,7 @@ from datetime import datetime
 import tensorflow as tf
 import numpy as np
 import ag.logging as log
-log.set(5)
+# log.set(5)
 
 
 class chatbot(object):

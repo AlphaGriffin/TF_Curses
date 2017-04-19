@@ -25,64 +25,8 @@ import ag.tf_curses.server.tf_server as tf_server
 import ag.tf_curses.database.database_interface as db
 from ag.tf_curses.frontend.curses_frontend import Window as Curses
 import ag.tf_curses.server.flask_server as flasker
+log.set(0)
 
-def TF_Server(host, tf_port):
-    try:
-        server = tf_server.tfserver()
-        Thread(target=server.start_server).start()
-    except:
-        log.error("and thats okay too.")
-
-def Chatbot(database):
-    service = chatbot.tf_chatbot(database)
-    return service
-
-def Sock_Server(host, port, service=None):
-    server = serv.Sock_Server(host, port, service)
-    try:
-        Thread(target=server.start_server).start()
-        log.info("this is working! Server Started")
-    except:
-        log.error("BUMMER!!")
-
-def Connect_to_remote_database(h, p):
-    log.info("Connecting to redis")
-    dictionary = db.Database(h, p, db=0)
-    rev_dictionary = db.Database(h, p, db=1)
-    database = [dictionary, rev_dictionary]
-    return database
-
-def old_main():
-    pid = os.getpid()
-    # host = "127.0.0.1"
-    host = "localhost"
-    remote_host = 'agserver'
-    remote_pass = 'dummypass'
-    chat_port = 12345
-    tf_port = 2222
-    redis_port = 6379
-    mesg = "Starting TF_Curses\n"
-    mesg += "Start Time: {}\n".format(datetime.now().isoformat(timespec='minutes'))
-    mesg += "PID: {}\n".format(pid)
-    log.info(mesg)
-
-    log.info("Starting Redis Server:\t{}:{}".format(remote_host, redis_port))
-    db_ = Connect_to_remote_database(remote_host, remote_pass)
-    log.debug("Connected to database")
-
-    log.info("Starting Chat Server:\t{}:{}".format(host, chat_port))
-    chat_service = Chatbot(db_)
-#    Sock_Server(host, chat_port, chat_service)
-    server = flasker.FlaskServer(host, chat_port, chat_service)
-    log.debug("started sock server")
-
-    log.info("Starting Tensorflow Server:\t{}:{}".format(host, tf_port))
-    TF_Server(host, tf_port)
-    log.debug("TF started")
-
-    EOF = "Everything Checks out"
-    log.info(EOF)
-    #sys.exit(EOF)
 
 class Options(object):
     def __init__(self):
@@ -100,34 +44,78 @@ class TF_Curses(object):
         self.errors = []
         self.working_panels = []
         self.cur = 0
-        self.menu = ["TF_Server ", "Database", "Chatbot", "Web Server"]
+        self.menu = ["TF_Server", "Database", "Chatbot", "Web_Server", "Error_Log"]
 
     @property
     def is_running(self):
         return self.running
 
     def start_frontend(self, frame='curses'):
-        log.debug("Starting Frontend")
+        pid = os.getpid()
+        msg = "AlphaGriffin TF_Curses | "
+        msg += "Start Time: {} | ".format(datetime.now().isoformat(timespec='minutes'))
+        msg += "PID: {}".format(pid)
         if frame is 'curses':
             self.frontend = Curses()
-            # TODO: setup main window
             self.frontend.main_screen()
-            self.frontend.header[0].addstr(1, 1, __copyright__)
+            msg_len = self.frontend.screen_w - 3
+            if len(msg) > msg_len:
+                msg = msg[:msg_len]
+            self.frontend.header[0].addstr(1, 1, msg)
             #self.frontend.header[0].refresh()
 
     def start_backend(self): pass
 
-    def TF_Server(host):
+    def Web_Server(self):
+        msg = "Service: {} : Still not implemented".format(self.menu[self.cur])
+        self.working_panels[self.cur][0].addstr(5, 5, msg)
+        pass
+
+    def Error_Log(self): pass
+
+    def Chatbot(self):
+        msg = "Starting Service: {}".format(self.menu[self.cur])
+        self.working_panels[self.cur][0].addstr(5, 5, msg)
+        service = chatbot.tf_chatbot(self.database)
+        host = self.options.host
+        port = self.options.chat_port
+        server = serv.Sock_Server(host, port, service)
         try:
-            log = []
-            p = self.options.tf_port
-            self.tfserver = tf_server.tfserver(log)
-            Thread(target=self.tfserver.start_server).start()
+            Thread(target=server.start_server).start()
+            self.frontend.redraw_window(self.working_panels[self.cur])
+            msg = "Service Running: {}".format(self.menu[self.cur])
+            self.working_panels[self.cur][0].addstr(4, 3, msg)
+            msg = "Use the AlphaGriffin Chat CLient @:".format()
+            self.working_panels[self.cur][0].addstr(5, 3, msg)
+            msg = "| {}:{} |".format(host, port)
+            self.working_panels[self.cur][0].addstr(6, 3, msg, self.frontend.color_gb)
         except:
-            log.error("TF_worker Failed To Start. or is Running")
-        self.errors.append(self.tfserver.log)
-        for index, item in enumerate(reversed(self.tfserver.log)):
-            self.working_panel[0][0].addstr(index,1,"{}: {}".format(index, item))
+            msg = "Service Failed: {}".format(self.menu[self.cur])
+            self.working_panels[self.cur][0].addstr(5, 5, msg)
+
+    def Database(self):
+        msg = "Starting Service: {}".format(self.menu[self.cur])
+        self.working_panels[self.cur][0].addstr(5, 5, msg)
+        h = self.options.remote_host
+        p = self.options.redis_port
+        dictionary = db.Database(h, p, db=0)
+        rev_dictionary = db.Database(h, p, db=1)
+        database = [dictionary, rev_dictionary]
+        self.working_panels[self.cur][0].addstr(5, 5, msg)
+        self.database = database
+        msg = "Service Running: {}".format(self.menu[self.cur])
+        self.working_panels[self.cur][0].addstr(5, 5, msg)
+        return True
+
+    def TF_Server(self):
+        self.working_panels[self.cur][0].addstr(5, 5, "Starting Service: {}".format(self.menu[self.cur]))
+        try:
+            self.tfserver = tf_server.tfserver()
+            Thread(target=self.tfserver.start_server).start()
+            self.working_panels[self.cur][0].addstr(5, 5, "Service Running: {}".format(self.menu[self.cur]))
+        except:
+            msg = "Service Failed: {}".format(self.menu[self.cur])
+            self.working_panels[self.cur][0].addstr(5, 5, msg)
 
     def main_loop(self):
         self.frontend.refresh()
@@ -166,18 +154,15 @@ class TF_Curses(object):
                 self.errors.append(command_text)
                 self.running = False
                 pass
-            elif keypress is 'test':
-                command_text = """Test Command:
-                                Switch Key Mode
-                                """
-
-                self.selector()
-                pass
             elif keypress == 10:
+                enter = self.menu[self.cur]
                 command_text = """Enter Command:
-                                Start this service
-                                """
-                self.working_panels[self.cur][0].addstr(5,5,"Starting Service: {}".format(self.menu[self.cur]))
+                                Start this service {}
+                                """.format(enter)
+                self.errors.append(command_text)
+                self.working_panels[self.cur][0].addstr(4,5,"Attempting Service: {}".format(self.menu[self.cur]))
+                # FIXME: DONT USE EVAL... WOW.!
+                eval("self.{}()".format(enter))
                 pass
             elif keypress == 9:
                 command_text = """Tab Command:
