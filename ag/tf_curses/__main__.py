@@ -44,7 +44,7 @@ class TF_Curses(object):
         self.errors = []
         self.working_panels = []
         self.cur = 0
-        self.menu = ["TF_Server", "Database", "Chatbot", "Web_Server", "Error_Log"]
+        self.menu = ["TF_Server", "Database", "Chatbot", "Web_Server","Chess", "Error_Log"]
 
     @property
     def is_running(self):
@@ -71,7 +71,48 @@ class TF_Curses(object):
         self.working_panels[self.cur][0].addstr(5, 5, msg)
         pass
 
-    def Error_Log(self): pass
+    def Chess(self):
+        class ChessGame(): pass
+        chessgame = ChessGame()
+        msg = "Starting Service: {}".format(self.menu[self.cur])
+        self.working_panels[self.cur][0].addstr(1, 5, msg)
+        # get window size
+        y, x = self.working_panels[self.cur][0].getmaxyx()
+        if y < 14 or x < 12:
+            info = "x = {}, y = {}".format(x, y)
+            self.working_panels[self.cur][0].addstr(2, 4, info)
+            info = "Screen too small to display board"
+            self.working_panels[self.cur][0].addstr(3, 4, info)
+            return
+        bsx = board_start_x = 3
+        bsy = board_start_y = 4
+        n = 8
+        board = [["WB"[(i+j+n%2+1) % 2] for i in range(n)] for j in range(n)]
+        positions = ["a", "b", "c", "d", "e", "f", "g", "h"]
+        for index, row in reversed(list(enumerate(board))):
+            test_msg = "{}: {}".format(index+1, row)
+            self.working_panels[self.cur][0].addstr(bsy, bsx, test_msg)
+            bsy += 1
+        self.working_panels[self.cur][0].addstr(bsy, bsx, "#: {}".format(positions))
+        pass
+
+    def Error_Log(self):
+        msg = "Service: {} : Testing".format(self.menu[self.cur])
+        self.working_panels[self.cur][0].addstr(1, 3, msg)
+        y, x = self.working_panels[self.cur][0].getmaxyx()
+        max_print = y-4
+        index = 3
+        # this is TOP DOWN
+        #for count, j in enumerate(self.errors[-max_print:]):
+        #    msg = "E:{0:3d} | {1}".format(len(self.errors) - count, j)
+        #    self.working_panels[self.cur][0].addstr(index, 3, msg[:x-4])
+        #    index += 1
+        # this is Bottom UP
+        for count, j in reversed(list(enumerate(self.errors[-max_print:]))):
+            msg = "E:{0:3d} | {1}".format(len(self.errors) - count, j)
+            self.working_panels[self.cur][0].addstr(index, 3, msg[:x-4])
+            index += 1
+        pass
 
     def Chatbot(self):
         msg = "Starting Service: {}".format(self.menu[self.cur])
@@ -127,10 +168,10 @@ class TF_Curses(object):
             pass
         try:
             if keypress > 0:
-                self.errors.append(("keypress: ", keypress))
+                # self.errors.append(("keypress: ", keypress))
                 self.decider(keypress)
         except:
-            self.errors.append(("keypress: ", keypress))
+            self.errors.append(("cmd", keypress))
             self.string_decider(keypress)
         ###
         # TODO: do other stuff
@@ -148,48 +189,36 @@ class TF_Curses(object):
         # main decider functionality!
         try:
             if keypress is 113 or keypress is 1:
-                command_text = """Exit Command:
-                                q command pressed.
-                                """
+                command_text = """Exit"""
                 self.errors.append(command_text)
                 self.running = False
                 pass
             elif keypress == 10:
                 enter = self.menu[self.cur]
-                command_text = """Enter Command:
-                                Start this service {}
-                                """.format(enter)
+                command_text = """Enter"""
                 self.errors.append(command_text)
                 self.working_panels[self.cur][0].addstr(4,5,"Attempting Service: {}".format(self.menu[self.cur]))
                 # FIXME: DONT USE EVAL... WOW.!
                 eval("self.{}()".format(enter))
                 pass
             elif keypress == 9:
-                command_text = """Tab Command:
-                                Switch Key Mode
-                                """
+                command_text = """Tab"""
                 if self.frontend.screen_mode:
                     self.frontend.screen_mode = False
                 self.selector()
                 pass
             elif keypress == 258:
-                command_text = """scroll Command:
-                                Roll Active window
-                                """
+                command_text = """scroll_up"""
                 self.working_panels[self.cur][0].scroll(-1)
                 self.frontend
                 pass
             elif keypress == 259:
-                command_text = """scroll Command:
-                                Roll Active window
-                                """
+                command_text = """scroll_down"""
                 self.errors.append(command_text)
                 self.working_panels[self.cur][0].scroll(1)
                 pass
             elif keypress == 338:
-                command_text = """Page Down:
-                                Change Selected Window
-                                """
+                command_text = """Page Down"""
                 self.errors.append(command_text)
                 if self.cur < len(self.menu) - 1:
                     self.cur += 1
@@ -198,9 +227,7 @@ class TF_Curses(object):
                 self.selector()
                 pass
             elif keypress == 339:
-                command_text = """Page Up:
-                                Change Selected Window
-                                """
+                command_text = """Page Up"""
                 self.errors.append(command_text)
                 if self.cur > 0:
                     self.cur -= 1
@@ -209,6 +236,7 @@ class TF_Curses(object):
                 self.selector()
                 pass
             else:
+                self.errors.append("""Unknown {}""".format(keypress))
                 # log.error('Unknown Connand Function')
                 pass
         finally:
@@ -251,9 +279,10 @@ class TF_Curses(object):
     def exit_safely(self, msg=None):
         try:
             self.frontend.end_safely()
-            for i in self.errors:
-                print("Errors: {}".format(i))
-            sys.exit("Supported by Alphagriffin.com\n{}".format(msg))
+            # DEPRICATED
+            #for i in self.errors:
+            #    print("Errors: {}".format(i))
+            sys.exit("Supported by Alphagriffin.com")
         except Exception as e:
             sys.exit("Supported by Alphagriffin.com\n{}".format(e))
 
