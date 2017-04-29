@@ -346,11 +346,11 @@ class App(object):
                                                                      ],
                                                                     feed_dict=feed_dict)
 
-                print("###WORKING!!####")
+                log.debug("###WORKING {}!!####".format(_step))
                 # pool data results
                 loss_total += loss
                 acc_total += acc
-                if i % display_step == 0:
+                if i % 25 == 0:
                     # acc pool
                     print("###WORKING2!!####")
                     acc_total = (acc_total * 100) / display_step
