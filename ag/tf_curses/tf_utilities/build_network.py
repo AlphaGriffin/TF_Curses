@@ -46,7 +46,7 @@ class App(object):
         self.n_hidden = 512
         self.logs_path = '/pub/models/chatbot/'
         self.filename = 'alphagriffin'
-        self.train_iters = int(5e1)
+        self.train_iters = int(5e2)
         self.converter = inflect.engine()
         self.sess = None
         self.iters = 50
@@ -271,7 +271,7 @@ class App(object):
         tf.add_to_collection("cost", training_ops.cost)
 
         training_ops.optimizer = tf.train.RMSPropOptimizer(learning_rate=training_ops.learn_rate) \
-                                                            .minimize(training_ops.cost)
+                                                            .minimize(training_ops.cost, global_step=training_ops.global_step)
 
         tf.add_to_collection("optimizer", training_ops.optimizer)
         training_ops.init_op = tf.global_variables_initializer()
@@ -343,12 +343,13 @@ class App(object):
                                                                      ],
                                                                     feed_dict=feed_dict)
 
-
+                print("###WORKING!!####")
                 # pool data results
                 loss_total += loss
                 acc_total += acc
-                if (_step + 1) % display_step == 0:
+                if i % display_step == 0:
                     # acc pool
+                    print("###WORKING2!!####")
                     acc_total = (acc_total * 100) / display_step
                     loss_total = loss_total / display_step
                     # gather datas
@@ -395,12 +396,12 @@ class App(object):
         try:
             self.sess = tf.InteractiveSession()
             checkpoint_file = tf.train.latest_checkpoint(folder)
-            log.info("trying: {}".format(checkpoint_file))
+            log.info("trying: {}".format(folder))
             saver = tf.train.import_meta_graph(checkpoint_file + ".meta")
-            log.debug("loading modelfile {}".format(folder))
+            log.debug("loading modelfile {}".format(checkpoint_file))
             self.sess.run(tf.global_variables_initializer())
             saver.restore(self.sess, checkpoint_file)
-            log.info("model successfully Loaded: {}".format(folder))
+            log.info("model successfully Loaded: {}".format(checkpoint_file))
             self.saver = saver
             self.model_loaded = True
         except Exception as e:
