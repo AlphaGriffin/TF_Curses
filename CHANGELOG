@@ -1,6 +1,8 @@
 Copyright (C) 2017 Alpha Griffin
 @%@~LICENSE~@%@
 
+saw_042917_3 - Progress!
+
 saw_042917_2 - More progress on web chat. Requires ag.logging >= 0.1.4.
 
 saw_042917_1 - Flask web connecting work in progress.

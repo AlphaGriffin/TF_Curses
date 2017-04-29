@@ -23,6 +23,10 @@ def interface():
 @flask.route('/talk', methods=['GET', 'POST'])
 def talk():
     text = request.args.get('text')
+
+    if text is None or text == '':
+        text = request.get_data().decode('us-ascii')
+
     #log.debug("you said: ", text)
     log.debug("talk", text=text, chatservice=chatservice)
 
@@ -30,8 +34,10 @@ def talk():
         try:
             response = chatservice.talk(text)
             log.info("server says: ", response)
+            return response
         except:
             log.error()
+            return "oops, malfunction"
     else:
         return "FlaskServer is working and your message received, but no chatbot service was provided";
 
