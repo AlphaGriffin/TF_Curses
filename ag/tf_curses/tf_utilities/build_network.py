@@ -44,7 +44,8 @@ class App(object):
         self.p = inflect.engine()
         self.n_input = 3
         self.n_hidden = 512
-        self.logs_path = '/pub/models/chatbot/chatbot/alphagriffin'
+        self.logs_path = '/pub/models/chatbot/'
+        self.filename = 'alphagriffin'
         self.train_iters = int(5e1)
         self.converter = inflect.engine()
         self.sess = None
@@ -273,6 +274,7 @@ class App(object):
         training_ops.init_op = tf.global_variables_initializer()
         tf.add_to_collection("init_op", training_ops.init_op)
         training_ops.saver = tf.train.Saver()
+        self.saver = train_ops.saver
         tf.add_to_collection("saver", training_ops.saver)
         training_ops.merged = tf.summary.merge_all()
         tf.add_to_collection("merged", training_ops.merged)
@@ -308,7 +310,7 @@ class App(object):
         # start by adding the whole graph to the Tboard
         writer.add_graph(session.graph)
 
-        while _step < self.train_iters:
+        for i in range(self.iters):
             # Generate a minibatch. Add some randomness on selection process.
             if offset > (len(training_data) - end_offset):
                 offset = random.randint(0, self.n_input + 1)
@@ -353,11 +355,11 @@ class App(object):
                         symbols_out_pred = self.rev_dict.read_data(int(tf.argmax(onehot_pred, 1).eval(session=session)))
                         # do save actions
                         log.info("Saving the Train Session:\n{}\n{}".format(msg.format(_step,
-                                                                                       offset,
-                                                                                       acc_total,
-                                                                                       loss_total),
-                                                                            pred_msg.format(symbols_in, symbols_out,
-                                                                                            symbols_out_pred)))
+                                                                                               offset,
+                                                                                               acc_total,
+                                                                                               loss_total),
+                                                                                                pred_msg.format(symbols_in, symbols_out,
+                                                                                                symbols_out_pred)))
                     except Exception as e:
                         log.warn("Bad Things are happening here: {}\n\t{}\n{}".format(elapsed(time.time() - start_time), e))
                         pass
@@ -369,14 +371,13 @@ class App(object):
                     acc_total = 0
                     loss_total = 0
                 # end of loop increments
-                network.global_step += 1
                 offset += (n_input + 1)
             except Exception as e:
                 log.warn("BLowing it DUDE... {}\nError: {}".format(_step, e))
                 pass
         # Save Functions
-        network.saver.save(session, self.logs_path, global_step=_step)
-        writer.add_summary(summary, global_step=_step)
+        network.saver.save(session, self.logs_path, global_step=network.global_step)
+        writer.add_summary(summary, global_step=network.global_step)
         projector.visualize_embeddings(writer, network.config)
         log.info("Optimization Finished!")
         log.debug("Elapsed time: {}".format(elapsed(time.time() - start_time)))
@@ -392,10 +393,12 @@ class App(object):
             self.sess = tf.InteractiveSession()
             checkpoint_file = tf.train.latest_checkpoint(folder)
             log.info("trying: {}".format(checkpoint_file))
-            new_saver = tf.train.import_meta_graph(checkpoint_file + ".meta")
+            saver = tf.train.import_meta_graph(checkpoint_file + ".meta")
             log.debug("loading modelfile {}".format(folder))
-            new_saver.restore(self.sess, checkpoint_file)
+            self.sess.run(tf.global_variables_initializer())
+            saver.restore(self.sess, checkpoint_file)
             log.info("model successfully Loaded: {}".format(folder))
+            self.saver = saver
             self.model_loaded = True
         except Exception as e:
             log.warn("This folder failed to produce a model {}\n{}".format(folder, e))

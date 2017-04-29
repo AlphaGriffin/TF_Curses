@@ -36,6 +36,7 @@ class Options(object):
         self.chat_port = 12345
         self.tf_port = 2222
         self.redis_port = 6379
+        self.flask_port = 5000
 
 class TF_Curses(object):
     def __init__(self, options):
