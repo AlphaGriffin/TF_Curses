@@ -17,3 +17,6 @@ __email__ = "ruckusist@alphagriffin.com"
 __status__ = "Prototype"
 
 # print("AGTFCP - Servers Init")
+
+chatservice = None
+

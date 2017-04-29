@@ -12,7 +12,7 @@ log.set(log.DEBUG)
 from flask import Flask, request
 flask = Flask(__name__)
 
-flaskservice = None
+from ag.tf_curses.server import chatservice
 
 @flask.route('/')
 def interface():
@@ -23,11 +23,21 @@ def interface():
 @flask.route('/talk', methods=['GET', 'POST'])
 def talk():
     text = request.args.get('text')
-    log.debug("you said: ", text)
 
-    if flaskservice is not None:
-        response = flaskservice.talk(text)
-        log.info("server says: ", response)
+    if text is None or text == '':
+        text = request.get_data().decode('us-ascii')
+
+    #log.debug("you said: ", text)
+    log.debug("talk", text=text, chatservice=chatservice)
+
+    if chatservice is not None:
+        try:
+            response = chatservice.talk(text)
+            log.info("server says: ", response)
+            return response
+        except:
+            log.error()
+            return "oops, malfunction"
     else:
         return "FlaskServer is working and your message received, but no chatbot service was provided";
 
@@ -35,6 +45,9 @@ def talk():
 
 
 def flaskytalkyrun(server=None):
+    log.info("flaskytalkyrun", server=server)
+    global chatservice
+    chatservice = server
     if server is not None:
         flask.run(host=server.host, port=server.port, threaded=True)
     else:
@@ -49,22 +62,27 @@ class FlaskChat(object):
         self.port = port
         self.service = service
 
-        flaskservice = service
-
     def run(self):
         flaskytalkyrun(self)
+
+    def talk(self, text):
+        if self.service is not None:
+            return self.service.talk(text)
+        else:
+            return "blah blah blah"
+
 
 #    @flask.route('/foo')
 
 if __name__ == "__main__":
     import ag.tf_curses.database.database_interface as db
-    dictionary = db.Database('localhost', 6379, db=0)
-    rev_dictionary = db.Database('localhost', 6379, db=1)
+    dictionary = db.Database('10.42.0.42', 6379, db=0)
+    rev_dictionary = db.Database('10.42.0.42', 6379, db=1)
     database = [dictionary, rev_dictionary]
 
     import ag.tf_curses.chatbot.chatbot as chatbot
     service = chatbot.tf_chatbot(database)
 
-    flaskytalkyrun(service)
+    FlaskChat(service=service).run()
 
 
