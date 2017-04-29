@@ -210,12 +210,12 @@ class App(object):
         # You can add multiple embeddings. Here we add only one.
         w_embedding = training_ops.config.embeddings.add()
         w_embedding.tensor_name = weight.name
-        tf.summary.histogram('weights', weight)
+        # tf.summary.histogram('weights', weight)
         # biases...
         bias = self.new_biases(dict_len)
         b_embedding = training_ops.config.embeddings.add()
         b_embedding.tensor_name = bias.name
-        tf.summary.histogram('bias', bias)
+        # tf.summary.histogram('bias', bias)
         a_tensorflow_layer = tf.matmul(outputs[-1], weight) + bias
         return a_tensorflow_layer
 
@@ -267,7 +267,7 @@ class App(object):
                             tf.nn.softmax_cross_entropy_with_logits(logits=training_ops.final_layer,
                                                                     labels=training_ops.input_label))
         tf.summary.scalar("cost", training_ops.cost)
-        tf.summary.histogram('cost', training_ops.cost)
+        # tf.summary.histogram('cost', training_ops.cost)
         tf.add_to_collection("cost", training_ops.cost)
 
         training_ops.optimizer = tf.train.RMSPropOptimizer(learning_rate=training_ops.learn_rate) \
@@ -367,7 +367,7 @@ class App(object):
                         log.warn("Bad Things are happening here: {}\n\t{}\n{}".format(elapsed(time.time() - start_time), e))
                         pass
                     # Save Functions
-                    self.saver.save(session, self.logs_path, global_step=network.global_step)
+                    self.saver.save(session, self.logs_path + self.filename, global_step=network.global_step)
                     writer.add_summary(summary, global_step=_step)
                     projector.visualize_embeddings(writer, network.config)
                     # reset the pooling counters
@@ -379,7 +379,7 @@ class App(object):
                 log.warn("BLowing it DUDE... {}\nError: {}".format(_step, e))
                 pass
         # Save Functions
-        self.saver.save(session, self.logs_path, global_step=network.global_step)
+        self.saver.save(session, self.logs_path + self.filename, global_step=network.global_step)
         writer.add_summary(summary, global_step=_step)
         projector.visualize_embeddings(writer, network.config)
         log.info("Optimization Finished!")
