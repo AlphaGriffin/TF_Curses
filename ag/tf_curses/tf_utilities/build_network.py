@@ -247,6 +247,7 @@ class App(object):
 
         # this is a setup for the tensorboard visualisations... use this when adding scalar histo ... this.
         training_ops.config = projector.ProjectorConfig()
+        tf.add_to_collection("config", training_ops.config)
         # embedding = tf.Variable(tf.pack(mnist.test.images[:FLAGS.max_steps], axis=0),
         #                        trainable=False,
         #                        name='embedding')
@@ -436,6 +437,7 @@ class App(object):
         # log.debug("Found saver op: {}".format(params.saver))
         params.merged = tf.get_collection_ref('merged')[0]
         # log.debug("Found merged op: {}".format(params.merged))
+        params.config = tf.get_collection_ref('config')[0]
         params.test = "okay"
         self.params = params
         return params
