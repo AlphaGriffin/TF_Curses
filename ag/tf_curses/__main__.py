@@ -24,8 +24,8 @@ import ag.tf_curses.chatbot.chatbot as chatbot
 import ag.tf_curses.server.tf_server as tf_server
 import ag.tf_curses.database.database_interface as db
 from ag.tf_curses.frontend.curses_frontend import Window as Curses
-import ag.tf_curses.server.flask_server as flasker
-log.set(0)
+import ag.tf_curses.server.flask_server as flask_talker
+log.set(log.WARN)
 
 
 class Options(object):
@@ -68,8 +68,14 @@ class TF_Curses(object):
     def start_backend(self): pass
 
     def Web_Server(self):
-        msg = "Service: {} : Still not implemented".format(self.menu[self.cur])
-        self.working_panels[self.cur][0].addstr(5, 5, msg)
+        try:
+            self.webserver = flask_talker.FlaskChat()
+            Thread(target=self.webserver.run).start()
+            self.working_panels[self.cur][0].addstr(5, 5, "Service Running: {}".format(self.menu[self.cur]))
+        except:
+            msg = "Service Failed: {}".format(self.menu[self.cur])
+            self.working_panels[self.cur][0].addstr(5, 5, msg)
+            #self.working_panels[self.cur][0].addstr(5, 5, sys.exc_info()[0])
         pass
 
     def Chess(self):

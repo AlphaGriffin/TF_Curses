@@ -76,7 +76,8 @@ if __name__ == '__main__':
                           'numpy',
                           'flask',
                           'redis',
-                          # 'ag.logging',
+                          'inflect',
+                          'logging',
                           ],  # setuptools here for example only (it's implied)
 
         extras_require={
