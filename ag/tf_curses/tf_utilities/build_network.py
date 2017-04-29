@@ -281,6 +281,8 @@ class App(object):
         # tf.add_to_collection("saver", training_ops.saver)
         training_ops.merged = tf.summary.merge_all()
         tf.add_to_collection("merged", training_ops.merged)
+        self.sess = tf.InteractiveSession()
+        self.sess.run(training_ops.init_op)
         return training_ops
 
     def process_network(self, sample_set, network, ):
@@ -295,11 +297,12 @@ class App(object):
 
         # start here
         start_time = time.time()
-        if self.sess:
-            session = self.sess
-        else:
-            session = tf.Session()
-        session.run(network.init_op)
+        session = self.sess
+        #if self.sess:
+        #    session = self.sess
+        #else:
+        #    session = tf.Session()
+        #session.run(network.init_op)
         writer = tf.summary.FileWriter(self.logs_path)
         _step = 0
         offset = random.randint(0, n_input + 1)
