@@ -247,7 +247,7 @@ class App(object):
 
         # this is a setup for the tensorboard visualisations... use this when adding scalar histo ... this.
         training_ops.config = projector.ProjectorConfig()
-        tf.add_to_collection("config", training_ops.config)
+        # tf.add_to_collection("config", training_ops.config)
         # embedding = tf.Variable(tf.pack(mnist.test.images[:FLAGS.max_steps], axis=0),
         #                        trainable=False,
         #                        name='embedding')
@@ -278,12 +278,12 @@ class App(object):
         tf.add_to_collection("init_op", training_ops.init_op)
         training_ops.saver = tf.train.Saver()
         self.saver = training_ops.saver
-        tf.add_to_collection("saver", training_ops.saver)
+        # tf.add_to_collection("saver", training_ops.saver)
         training_ops.merged = tf.summary.merge_all()
         tf.add_to_collection("merged", training_ops.merged)
         return training_ops
 
-    def process_network(self, sample_set, network):
+    def process_network(self, sample_set, network, ):
 
         # DEFINES!!
         training_data = sample_set.content
@@ -369,7 +369,7 @@ class App(object):
                     # Save Functions
                     self.saver.save(session, self.logs_path + self.filename, global_step=network.global_step)
                     writer.add_summary(summary, global_step=_step)
-                    projector.visualize_embeddings(writer, network.config)
+                    # projector.visualize_embeddings(writer, network.config)
                     # reset the pooling counters
                     acc_total = 0
                     loss_total = 0
@@ -381,7 +381,7 @@ class App(object):
         # Save Functions
         self.saver.save(session, self.logs_path + self.filename, global_step=network.global_step)
         writer.add_summary(summary, global_step=_step)
-        projector.visualize_embeddings(writer, network.config)
+        # projector.visualize_embeddings(writer, network.config)
         log.info("Optimization Finished!")
         log.debug("Elapsed time: {}".format(elapsed(time.time() - start_time)))
         return(loss_total, acc_total)
@@ -437,7 +437,7 @@ class App(object):
         # log.debug("Found saver op: {}".format(params.saver))
         params.merged = tf.get_collection_ref('merged')[0]
         # log.debug("Found merged op: {}".format(params.merged))
-        params.config = tf.get_collection_ref('config')[0]
+        # params.config = tf.get_collection_ref('config')[0]
         params.test = "okay"
         self.params = params
         return params
