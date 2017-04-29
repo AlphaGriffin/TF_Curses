@@ -49,6 +49,7 @@ class App(object):
         self.train_iters = int(5e1)
         self.converter = inflect.engine()
         self.sess = None
+        self.iters = 50
 
     def main(self, args):
         log.info("TESTRUN -")
@@ -267,14 +268,15 @@ class App(object):
         tf.summary.scalar("cost", training_ops.cost)
         tf.summary.histogram('cost', training_ops.cost)
         tf.add_to_collection("cost", training_ops.cost)
+
         training_ops.optimizer = tf.train.RMSPropOptimizer(learning_rate=training_ops.learn_rate) \
                                                             .minimize(training_ops.cost)
 
-
+        tf.add_to_collection("optimizer", training_ops.optimizer)
         training_ops.init_op = tf.global_variables_initializer()
         tf.add_to_collection("init_op", training_ops.init_op)
         training_ops.saver = tf.train.Saver()
-        self.saver = train_ops.saver
+        self.saver = training_ops.saver
         tf.add_to_collection("saver", training_ops.saver)
         training_ops.merged = tf.summary.merge_all()
         tf.add_to_collection("merged", training_ops.merged)
@@ -310,7 +312,7 @@ class App(object):
         # start by adding the whole graph to the Tboard
         writer.add_graph(session.graph)
 
-        for i in range(self.iters):
+        for i in range(self.train_iters):
             # Generate a minibatch. Add some randomness on selection process.
             if offset > (len(training_data) - end_offset):
                 offset = random.randint(0, self.n_input + 1)
@@ -364,7 +366,7 @@ class App(object):
                         log.warn("Bad Things are happening here: {}\n\t{}\n{}".format(elapsed(time.time() - start_time), e))
                         pass
                     # Save Functions
-                    network.saver.save(session, self.logs_path, global_step=_step)
+                    self.saver.save(session, self.logs_path, global_step=network.global_step)
                     writer.add_summary(summary, global_step=_step)
                     projector.visualize_embeddings(writer, network.config)
                     # reset the pooling counters
@@ -376,8 +378,8 @@ class App(object):
                 log.warn("BLowing it DUDE... {}\nError: {}".format(_step, e))
                 pass
         # Save Functions
-        network.saver.save(session, self.logs_path, global_step=network.global_step)
-        writer.add_summary(summary, global_step=network.global_step)
+        self.saver.save(session, self.logs_path, global_step=network.global_step)
+        writer.add_summary(summary, global_step=_step)
         projector.visualize_embeddings(writer, network.config)
         log.info("Optimization Finished!")
         log.debug("Elapsed time: {}".format(elapsed(time.time() - start_time)))
@@ -412,7 +414,7 @@ class App(object):
         log.debug("Num ops in model: {}".format(len(params.list_all_ops)))
         params.final_layer = tf.get_collection_ref('final_layer')[0]
         #log.debug("Found Final Layer: {}".format(params.final_layer))
-        params.input_tensor = tf.get_collection_ref('input_word')[0]
+        params.input_word = tf.get_collection_ref('input_word')[0]
         #log.debug("Found input tensor: {}".format(params.input_tensor))
         params.input_label = tf.get_collection_ref('input_label')[0]
         #log.debug("Found input label: {}".format(params.input_label))
@@ -430,7 +432,7 @@ class App(object):
         #log.debug("Found optimizer op: {}".format(params.optimizer))
         params.init_op = tf.get_collection_ref('init_op')[0]
         # log.debug("Found init_op op: {}".format(params.init_op))
-        params.saver = tf.get_collection_ref('saver')[0]
+        # params.saver = tf.get_collection_ref('saver')[0]
         # log.debug("Found saver op: {}".format(params.saver))
         params.merged = tf.get_collection_ref('merged')[0]
         # log.debug("Found merged op: {}".format(params.merged))
