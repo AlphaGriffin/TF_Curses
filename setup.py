@@ -1,25 +1,6 @@
 #!/usr/bin/env python
-#
-# Copyright (C) 2017 Alpha Griffin
-# @%@~LICENSE~@%@
-
-"""
-TF_Curses
-Alphagriffin.com
+"""TF_Curses, Alphagriffin.com.
 Eric Petersen @Ruckusist <eric.alphagriffin@gmail.com>
-"""
-
-
-"""
-AlphaGriffin setuptools build script.
-
-@author Ruckusist
-
-@see    https://packaging.python.org/en/latest/distributing.html
-@see    https://github.com/pypa/sampleproject
-
-Some of this script logic also taken from:
-        https://github.com/google/protobuf
 """
 
 from setuptools import setup, find_packages
@@ -27,7 +8,7 @@ from codecs import open
 from os import path
 
 if __name__ == '__main__':
-    ### long_description breaks out of DIR installs!
+    # long_description breaks out of DIR installs!
     setup(
 
         name='TF_Curses',
@@ -60,6 +41,7 @@ if __name__ == '__main__':
             "Programming Language :: Python :: 3.3",
             "Programming Language :: Python :: 3.4",
             "Programming Language :: Python :: 3.5",
+            "Programming Language :: Python :: 3.6",
             "Programming Language :: Python :: Implementation :: PyPy",
             'Topic :: System :: Installation/Setup',
             'Topic :: Utilities'
@@ -71,13 +53,13 @@ if __name__ == '__main__':
 
         # run-time dependencies
         # twisted is a threading program... will be upgraded to soon.
+        # tf gpu is breaking on the server install
         install_requires=['setuptools',
-                          'tensorflow-gpu',
+                          'tensorflow',
                           'numpy',
                           'flask',
                           'redis',
                           'inflect',
-                          'logging',
                           ],  # setuptools here for example only (it's implied)
 
         extras_require={
@@ -94,4 +76,3 @@ if __name__ == '__main__':
             ]
         },
     )
-
