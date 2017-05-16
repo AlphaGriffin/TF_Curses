@@ -45,7 +45,12 @@ class TF_Curses(object):
         self.errors = []
         self.working_panels = []
         self.cur = 0
-        self.menu = ["TF_Server", "Database", "Chatbot", "Web_Server","Chess", "Error_Log"]
+        self.menu = ["TF_Server",
+                     "Database",
+                     "Chatbot",
+                     "Web_Server",
+                     "Chess",
+                     "Error_Log"]
 
     @property
     def is_running(self):
@@ -81,7 +86,7 @@ class TF_Curses(object):
     def Chess(self):
         class ChessGame(): pass
         chessgame = ChessGame()
-        msg = "Starting Service: {}".format(self.menu[self.cur])
+        msg = "AG_{}".format(self.menu[self.cur])
         self.working_panels[self.cur][0].addstr(1, 5, msg)
         # get window size
         y, x = self.working_panels[self.cur][0].getmaxyx()
@@ -92,19 +97,39 @@ class TF_Curses(object):
             self.working_panels[self.cur][0].addstr(3, 4, info)
             return
         bsx = board_start_x = 3
-        bsy = board_start_y = 4
+        bsy = board_start_y = 3
         n = 8
-        board = [["WB"[(i+j+n%2+1) % 2] for i in range(n)] for j in range(n)]
+        colors = "WB"
+        board = [[colors[(i+j+n%2+1) % 2] for i in range(n)] for j in range(n)]
         positions = ["a", "b", "c", "d", "e", "f", "g", "h"]
         for index, row in reversed(list(enumerate(board))):
-            test_msg = "{}: {}".format(index+1, row)
+            test_msg = "{}: ".format(index+1)
             self.working_panels[self.cur][0].addstr(bsy, bsx, test_msg)
+            bsx += 3
+            for this, square in enumerate(row):
+                if square is 'W':
+                    #row[this] = u'\u2588'
+                    row[this] = 'W'
+                    self.working_panels[self.cur][0].addstr(bsy, bsx, row[this], self.frontend.chess_white)
+                elif square is 'B':
+                    # row[this] = u'\u2588'
+                    row[this] = 'B'
+                    self.working_panels[self.cur][0].addstr(bsy, bsx, row[this], self.frontend.chess_black)
+                else:
+                    self.working_panels[self.cur][0].addstr(bsy, bsx, '')
+                bsx += 1
             bsy += 1
-        self.working_panels[self.cur][0].addstr(bsy, bsx, "#: {}".format(positions))
+            bsx = 3
+        self.working_panels[self.cur][0].addstr(bsy, bsx, "#: ")
+        bsx += 3
+        for index, element in enumerate(positions):
+            self.working_panels[self.cur][0].addstr(bsy, bsx, "{}".format(element))
+            bsx += 1
         pass
 
     def Error_Log(self):
         msg = "Service: {} : Testing".format(self.menu[self.cur])
+        msg += u"\u2588"
         self.working_panels[self.cur][0].addstr(1, 3, msg)
         y, x = self.working_panels[self.cur][0].getmaxyx()
         max_print = y-4
@@ -204,7 +229,7 @@ class TF_Curses(object):
                 enter = self.menu[self.cur]
                 command_text = """Enter"""
                 self.errors.append(command_text)
-                self.working_panels[self.cur][0].addstr(4,5,"Attempting Service: {}".format(self.menu[self.cur]))
+                #self.working_panels[self.cur][0].addstr(4,5,"Attempting Service: {}".format(self.menu[self.cur]))
                 # FIXME: DONT USE EVAL... WOW.!
                 eval("self.{}()".format(enter))
                 pass

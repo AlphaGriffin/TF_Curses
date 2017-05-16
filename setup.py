@@ -54,8 +54,8 @@ if __name__ == '__main__':
         # run-time dependencies
         # twisted is a threading program... will be upgraded to soon.
         # tf gpu is breaking on the server install
+        # Tensorflow needs to be installed manually...
         install_requires=['setuptools',
-                          'tensorflow',
                           'numpy',
                           'flask',
                           'redis',
@@ -75,4 +75,6 @@ if __name__ == '__main__':
                 'tf_curses = ag.tf_curses.__main__:main'
             ]
         },
+        test_suite='nose.collector',
+        tests_require=['nose'],
     )

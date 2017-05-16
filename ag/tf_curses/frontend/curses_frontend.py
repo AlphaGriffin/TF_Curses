@@ -57,6 +57,10 @@ class Window(object):
         self.color_cb = curses.color_pair(2)
         curses.init_pair(3, curses.COLOR_GREEN, curses.COLOR_BLACK)
         self.color_gb = curses.color_pair(3)
+        curses.init_pair(4, curses.COLOR_BLUE, curses.COLOR_RED)
+        self.chess_black = curses.color_pair(4)
+        curses.init_pair(5, curses.COLOR_RED, curses.COLOR_WHITE)
+        self.chess_white = curses.color_pair(5)
         self.color_bold = curses.A_BOLD
         self.color_blink = curses.A_BLINK
         self.color_error = self.color_bold | self.color_blink | self.color_rw

@@ -6,7 +6,7 @@ import numpy as np
 
 __author__ = "Eric Petersen @Ruckusist"
 __copyright__ = "Copyright 2017, The Alpha Griffin Project"
-__credits__ &= ["Eric Petersen", "Shawn Wilson", "@alphagriffin"]
+__credits__ = ["Eric Petersen", "Shawn Wilson", "@alphagriffin"]
 __license__ = "***"
 __version__ = "0.0.1"
 __maintainer__ = "Eric Petersen"
