@@ -21,6 +21,7 @@ from threading import Thread
 import ag.logging as log
 import ag.tf_curses.server.basic_server as serv
 import ag.tf_curses.chatbot.chatbot as chatbot
+import ag.tf_curses.chess.chessgame as chess_game
 import ag.tf_curses.server.tf_server as tf_server
 import ag.tf_curses.database.database_interface as db
 from ag.tf_curses.frontend.curses_frontend import Window as Curses
@@ -84,8 +85,7 @@ class TF_Curses(object):
         pass
 
     def Chess(self):
-        class ChessGame(): pass
-        chessgame = ChessGame()
+        chessgame = chess_game.AgChess()
         msg = "AG_{}".format(self.menu[self.cur])
         self.working_panels[self.cur][0].addstr(1, 5, msg)
         # get window size
@@ -100,20 +100,26 @@ class TF_Curses(object):
         bsy = board_start_y = 3
         n = 8
         colors = "WB"
-        board = [[colors[(i+j+n%2+1) % 2] for i in range(n)] for j in range(n)]
+        # new_b, pos = chessgame.build_board()
+        board = [
+            [colors
+             [(i+j+n%2+1) % 2
+              ] for i in range(n)] for j in range(n)]
         positions = ["a", "b", "c", "d", "e", "f", "g", "h"]
         for index, row in reversed(list(enumerate(board))):
             test_msg = "{}: ".format(index+1)
             self.working_panels[self.cur][0].addstr(bsy, bsx, test_msg)
             bsx += 3
             for this, square in enumerate(row):
+                test = chessgame.board.decode('UTF-8')
+                element = test[index, this]
+                if element == '0':
+                    element = ' '# u'\u2588'
                 if square is 'W':
-                    #row[this] = u'\u2588'
-                    row[this] = 'W'
+                    row[this] = element
                     self.working_panels[self.cur][0].addstr(bsy, bsx, row[this], self.frontend.chess_white)
                 elif square is 'B':
-                    # row[this] = u'\u2588'
-                    row[this] = 'B'
+                    row[this] = element
                     self.working_panels[self.cur][0].addstr(bsy, bsx, row[this], self.frontend.chess_black)
                 else:
                     self.working_panels[self.cur][0].addstr(bsy, bsx, '')
