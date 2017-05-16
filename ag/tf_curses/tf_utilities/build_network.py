@@ -46,7 +46,7 @@ class App(object):
         self.n_hidden = 512
         self.logs_path = '/pub/models/chatbot/'
         self.filename = 'alphagriffin'
-        self.train_iters = int(5e1)
+        self.train_iters = int(5e2)
         self.converter = inflect.engine()
         self.sess = None
         self.iters = 50
@@ -247,7 +247,7 @@ class App(object):
 
         # this is a setup for the tensorboard visualisations... use this when adding scalar histo ... this.
         training_ops.config = projector.ProjectorConfig()
-        tf.add_to_collection("config", training_ops.config)
+        # tf.add_to_collection("config", training_ops.config)
         # embedding = tf.Variable(tf.pack(mnist.test.images[:FLAGS.max_steps], axis=0),
         #                        trainable=False,
         #                        name='embedding')
@@ -271,19 +271,21 @@ class App(object):
         tf.add_to_collection("cost", training_ops.cost)
 
         training_ops.optimizer = tf.train.RMSPropOptimizer(learning_rate=training_ops.learn_rate) \
-                                                            .minimize(training_ops.cost)
+                                                            .minimize(training_ops.cost, global_step=training_ops.global_step)
 
         tf.add_to_collection("optimizer", training_ops.optimizer)
         training_ops.init_op = tf.global_variables_initializer()
         tf.add_to_collection("init_op", training_ops.init_op)
         training_ops.saver = tf.train.Saver()
         self.saver = training_ops.saver
-        tf.add_to_collection("saver", training_ops.saver)
+        # tf.add_to_collection("saver", training_ops.saver)
         training_ops.merged = tf.summary.merge_all()
         tf.add_to_collection("merged", training_ops.merged)
+        self.sess = tf.InteractiveSession()
+        self.sess.run(training_ops.init_op)
         return training_ops
 
-    def process_network(self, sample_set, network):
+    def process_network(self, sample_set, network, ):
 
         # DEFINES!!
         training_data = sample_set.content
@@ -295,11 +297,12 @@ class App(object):
 
         # start here
         start_time = time.time()
-        if self.sess:
-            session = self.sess
-        else:
-            session = tf.Session()
-        session.run(network.init_op)
+        session = self.sess
+        #if self.sess:
+        #    session = self.sess
+        #else:
+        #    session = tf.Session()
+        #session.run(network.init_op)
         writer = tf.summary.FileWriter(self.logs_path)
         _step = 0
         offset = random.randint(0, n_input + 1)
@@ -343,12 +346,13 @@ class App(object):
                                                                      ],
                                                                     feed_dict=feed_dict)
 
-
+                log.debug("###WORKING {}!!####".format(_step))
                 # pool data results
                 loss_total += loss
                 acc_total += acc
-                if (_step + 1) % display_step == 0:
+                if i % 25 == 0:
                     # acc pool
+                    print("###WORKING2!!####")
                     acc_total = (acc_total * 100) / display_step
                     loss_total = loss_total / display_step
                     # gather datas
@@ -369,7 +373,7 @@ class App(object):
                     # Save Functions
                     self.saver.save(session, self.logs_path + self.filename, global_step=network.global_step)
                     writer.add_summary(summary, global_step=_step)
-                    projector.visualize_embeddings(writer, network.config)
+                    # projector.visualize_embeddings(writer, network.config)
                     # reset the pooling counters
                     acc_total = 0
                     loss_total = 0
@@ -381,7 +385,7 @@ class App(object):
         # Save Functions
         self.saver.save(session, self.logs_path + self.filename, global_step=network.global_step)
         writer.add_summary(summary, global_step=_step)
-        projector.visualize_embeddings(writer, network.config)
+        # projector.visualize_embeddings(writer, network.config)
         log.info("Optimization Finished!")
         log.debug("Elapsed time: {}".format(elapsed(time.time() - start_time)))
         return(loss_total, acc_total)
@@ -395,12 +399,12 @@ class App(object):
         try:
             self.sess = tf.InteractiveSession()
             checkpoint_file = tf.train.latest_checkpoint(folder)
-            log.info("trying: {}".format(checkpoint_file))
+            log.info("trying: {}".format(folder))
             saver = tf.train.import_meta_graph(checkpoint_file + ".meta")
-            log.debug("loading modelfile {}".format(folder))
+            log.debug("loading modelfile {}".format(checkpoint_file))
             self.sess.run(tf.global_variables_initializer())
             saver.restore(self.sess, checkpoint_file)
-            log.info("model successfully Loaded: {}".format(folder))
+            log.info("model successfully Loaded: {}".format(checkpoint_file))
             self.saver = saver
             self.model_loaded = True
         except Exception as e:
@@ -437,7 +441,7 @@ class App(object):
         # log.debug("Found saver op: {}".format(params.saver))
         params.merged = tf.get_collection_ref('merged')[0]
         # log.debug("Found merged op: {}".format(params.merged))
-        params.config = tf.get_collection_ref('config')[0]
+        # params.config = tf.get_collection_ref('config')[0]
         params.test = "okay"
         self.params = params
         return params

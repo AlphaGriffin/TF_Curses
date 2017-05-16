@@ -22,7 +22,7 @@ from datetime import datetime
 import tensorflow as tf
 import numpy as np
 import ag.logging as log
-# log.set(5)
+log.set(5)
 
 
 class chatbot(object):
@@ -128,12 +128,6 @@ class tf_chatbot(object):
         self.user = user
         self.Session = Session
 
-    @property
-    def servcie_name(self):
-        return self.__service_name__
-
-
-
     def main(self):
         log.info("beginning chabot test")
         if self.load_tf_model():
@@ -150,22 +144,8 @@ class tf_chatbot(object):
             return True
         return False
 
-    def start_tf_session(self):
-        if self.sess:
-            self.sess.close()
-        self.session = tf.InteractiveSession()
-        pass
-
-    def stop_tf_session(self):
-        if self.sess:
-            self.sess.close()
-        pass
-
-    def stop_converstion(self):
-        pass
-
     def load_tf_model(self, folder=None):
-        if folder is None: folder = "/pub/models"
+        if folder is None: folder = "/pub/models/chatbot"
         log.info("Loading Model: {}".format("Model_Name"))
         if self.sess:
             self.sess.close()
@@ -173,10 +153,12 @@ class tf_chatbot(object):
             self.sess = tf.InteractiveSession()
             checkpoint_file = tf.train.latest_checkpoint(folder)
             log.info("trying: {}".format(checkpoint_file))
-            new_saver = tf.train.import_meta_graph(checkpoint_file + ".meta")
+            saver = tf.train.import_meta_graph(checkpoint_file + ".meta")
             log.debug("loading modelfile {}".format(folder))
-            new_saver.restore(self.sess, checkpoint_file)
+            self.sess.run(tf.InteractiveSession())
+            saver.restore(self.sess, checkpoint_file)
             log.info("model successfully Loaded: {}".format(folder))
+            self.saver = saver
             self.model_loaded = True
         except Exception as e:
             log.warn("This folder failed to produce a model {}\n{}".format(folder, e))
@@ -193,7 +175,7 @@ class tf_chatbot(object):
         #log.debug("Found encoder op: {}".format(params.encoder))
         #params.encoder = tf.get_collection_ref('decoder')[0]
         #log.debug("Found decoder op: {}".format(params.decoder))
-        params.input_tensor = tf.get_collection_ref('input_word')[0]
+        params.input_word = tf.get_collection_ref('input_word')[0]
         #log.debug("Found input tensor: {}".format(params.input_tensor))
         params.input_label = tf.get_collection_ref('input_label')[0]
         #log.debug("Found input label: {}".format(params.input_label))
@@ -220,65 +202,14 @@ class tf_chatbot(object):
         feed_dict = {self.params.input_tensor: keys}
         onehot_pred = self.sess.run(self.params.final_layer, feed_dict=feed_dict)
 
-        thing = tf.argmax(onehot_pred, 1)
+        onehot_pred = tf.argmax(onehot_pred, 1)
         #log.debug("{}".format(thing))
-        ohpi = self.sess.run(thing)
-        log.debug("{}".format(ohpi))
+        word = self.sess.run(onehot_pred)
+
         # onehot_pred_index = int().eval(session=self.sess))
-        new_word = self.rev_dictionary.read_data(ohpi)
+        new_word = self.rev_dictionary.read_data(word)
+        log.debug("word num: {}: {}".format(word, new_word))
         return new_word
-
-    def test_reponse(self, input_string):
-        log.info("Starting reponse from input: {}".format(input_string))
-        responding = True
-        response = ""
-        symbols_in_keys = []
-        while responding:
-            try:
-                log.debug("responding")
-                words = input_string.split(' ')
-                for i in range(len(words)):
-                    symbols_in_keys.append(self.dictionary.read_data(str(words[i])))
-
-                new_word = self.get_word(symbols_in_keys)
-                log.debug("got a new word: {}".format(new_word))
-                symbols_in_keys.append(self.dictionary.read_data(new_word))
-                response = new_word
-
-            except Exception as e:
-                log.fatal("Errors!!!\n{}".format(e))
-                sys.exit(e)
-
-            responding = False
-
-        return response
-
-    def respond(self, input_string):
-        log.info("Starting reponse from input: {}".format(input_string))
-
-        # x = tf.placeholder(tf.float32, [-1, len_input, 1])
-        responding = True
-        response = ""
-        while responding:
-            words = input_string.split(' ')
-            len_input = len(input_string)
-            if len(words) != len_input:
-                log.debug("Still getting more words {} != {}".format(len(words), len_input))
-                continue
-            try:
-                # this is our input string
-                for i in range(len_input):
-                    symbols_in_keys.append(self.database.read_data(str(words[i])))
-
-                new_word = self.get_word(symbols_in_keys)
-                log.debug("got a new word: {}".format(new_word))
-                symbols_in_keys.append(self.database.read_data(new_word))
-            except:
-                log.warn("Failing to find a word")
-                pass
-            responding = False
-        log.info("{} :\n\t{}".format(input_string, response))
-        return response
 
     def talk(self, msg):
         input_string = msg.split(' ')
@@ -304,9 +235,9 @@ if __name__ == '__main__':
     import database_interface as db
     log.info("Starting the Chatbot Testing")
     log.debug("starting redis")
-    dict = db.Database(db=0)
+    _dict = db.Database(db=0)
     rev_dict = db.Database(db=1)
-    database = [dict, rev_dict]
+    database = [_dict, rev_dict]
     try:
         app = tf_chatbot(database)
         if app.main():
