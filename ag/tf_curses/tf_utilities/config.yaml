@@ -1,0 +1,23 @@
+########################################################
+#    Alphagriffin.com The TF_Curses Project            #
+# this is a test config for tf_curses test_buckets.    #
+# ==================================================== #
+# Application: Python Key: value for options class.    #
+#   - options.key = value                              #
+########################################################
+
+#//////| DATABASE |\\\\\\#
+redis_host: '192.168.99.225'
+redis_pass: 'dummypass'
+
+#//////| DATASET |\\\\\\#
+# input path
+input_path: '/home/eric/repos/pycharm_repos/TF_Curses/ag/tf_curses/text/lincoln.txt'
+# translation path
+translation_path: '/home/eric/repos/pycharm_repos/TF_Curses/ag/tf_curses/text/jefferson.txt'
+
+#//////| NETWORK |\\\\\\#
+model_save_dir: '/pub/models/chatbot/current'
+model_save_name: 'AlphaGriffin'
+
+#//////| APP |\\\\\\#

@@ -6,6 +6,27 @@ AG_Chess game in the TF_Curses project.
 import sys
 import numpy as np
 
+
+class MoveRules(object):
+    """This feels wrong.
+
+    It should just know what is a legal move.
+    """
+
+    def __init__(self): pass
+
+    def pawn_rule(): pass
+
+    def rook_rule(): pass
+
+    def knight_rule(): pass
+
+    def bishop_rule(): pass
+
+    def queen_rule(): pass
+
+    def king_rule(): pass
+
 class AgChess(object):
     """AG Chess Game object."""
 
@@ -15,7 +36,6 @@ class AgChess(object):
         self.player0 = 0
         self.player1 = 0
         self.start_positions()
-        # self.build_board()
 
     def main(self):
         """A test object."""
@@ -50,14 +70,6 @@ class AgChess(object):
                 for r_index, square in enumerate(row):
                     row[r_index] = ''
         self.player1 = player1
-        self.board = self.player0 + self.player1
-        for index, row in enumerate(self.board):
-            for r_index, square in enumerate(row):
-                if square is '':
-                    self.board[index, r_index] = 0
-
-    def build_board(self):
-        """Construct proper placement of colored squares."""
         self.board = self.player0 + self.player1
         for index, row in enumerate(self.board):
             for r_index, square in enumerate(row):
