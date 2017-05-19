@@ -71,5 +71,5 @@ Usage
     :target: https://gitter.im/AlphaGriffin/Lobby
 .. |coverall| image:: https://coveralls.io/repos/github/Ruckusist/tf_curses/badge.svg?branch=master
     :target: https://coveralls.io/github/Ruckusist/tf_curses?branch=master
-.. |travisCI| image:: https://travis-ci.org/Ruckusist/TF_Curses.svg?branch=master
-    :target: https://travis-ci.org/Ruckusist/TF_Curses
+.. |travisCI| image:: https://travis-ci.org/AlphaGriffin/TF_Curses.svg?branch=master
+    :target: https://travis-ci.org/AlphaGriffin/TF_Curses
