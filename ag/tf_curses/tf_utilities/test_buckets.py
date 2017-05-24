@@ -15,7 +15,9 @@ import yaml
 
 __author__ = "Eric Petersen @Ruckusist"
 __copyright__ = "Copyright 2017, The Alpha Griffin Project"
-__credits__ = ["Eric Petersen", "Shawn Wilson", "@alphagriffin"]
+__credits__ = ["Eric Petersen",
+               "Shawn Wilson",
+               "@alphagriffin"]
 __license__ = "***"
 __version__ = "0.0.1"
 __maintainer__ = "Eric Petersen"
@@ -74,6 +76,7 @@ class Options(object):
 
 class DataPrep(object):
     """Handle data translations."""
+
     def __init__(self, options):
         """Take as little as possible as user input.
 
@@ -97,6 +100,26 @@ class DataPrep(object):
         self.max_size = None
 
         # self.dataset = self.prep_buckets()
+
+    @staticmethod
+    def read_data(fname):
+        """Produce a useable numpy array from a filename."""
+        if not os.path.isfile(fname):
+            print("{} is an invalid path".format(fname))
+            return False
+
+        class SampleText():
+            """A python object orginizer."""
+
+            pass
+        sample_text = SampleText()
+        with open(fname) as f:
+            content = f.readlines()
+        content = [x.strip() for x in content]
+        content = [content[i].split() for i in range(len(content))]
+        content = np.array(content)
+        sample_text.content = np.reshape(content, [-1, ])
+        return sample_text
 
     def prep_buckets(self):
         """Prep the buckets."""
@@ -135,7 +158,12 @@ class DataPrep(object):
 
 class Network(object):
     """A test framework."""
+
     def __init__(self, options):
+        """Just options should be good enough.
+
+        Make that work.
+        """
         self.options = options
 
     @property
@@ -151,6 +179,7 @@ class Network(object):
 
 class App(object):
     """A test framework."""
+
     def __init__(self, options):
         """Take all the initalizers."""
         self.network = Network(options)
@@ -164,8 +193,6 @@ class App(object):
         """Run main app tests."""
         self.test = 1
         return True
-
-
 
 
 def main():

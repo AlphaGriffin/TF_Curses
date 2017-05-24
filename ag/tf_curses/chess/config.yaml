@@ -11,33 +11,12 @@ redis_host: '192.168.99.225'
 redis_pass: 'dummypass'
 
 #//////| DATASET |\\\\\\#
-dataset_dir: '/pub/dataset/chess'
 
 #//////| NETWORK |\\\\\\#
-model_save_dir: '/pub/models/chessbot/'
+model_save_dir: '/pub/models/chessbot/current'
 model_save_name: 'AlphaGriffin'
+batch_size: 128
+train_period: 1000
+save_period: 250
 
 #//////| APP |\\\\\\#
-# Q-learning settings
-learning_rate: 0.00025
-# learning_rate = 0.0001
-discount_factor: 0.99
-epochs: 20
-learning_steps_per_epoch: 2000
-replay_memory_size: 10000
-
-# NN learning settings
-batch_size: 64
-
-# Training regime
-test_episodes_per_epoch: 100
-
-# Other parameters
-frame_repeat: 12
-resolution: (30, 45)
-episodes_to_watch: 10
-
-# model_savefile = "/tmp/model.ckpt"
-save_model: True
-load_model: False
-skip_learning: False
