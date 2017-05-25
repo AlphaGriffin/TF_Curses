@@ -12,22 +12,24 @@ __author__ = "Eric Petersen @Ruckusist"
 __copyright__ = "Copyright 2017, The Alpha Griffin Project"
 __credits__ = ["Eric Petersen", "Shawn Wilson", "@alphagriffin"]
 __license__ = "***"
-__version__ = "0.0.1"
+__version__ = "0.0.2"
 __maintainer__ = "Eric Petersen"
 __email__ = "ruckusist@alphagriffin.com"
 __status__ = "Prototype"
 
 import sys
-
 import ag.logging as log
-
 import redis
-
 log.set(5)
 
 
 class Database(object):
-    def __init__(self, host='agserver', pass_='dummypass', db=0):
+    """A Redis Database manage."""
+
+    def __init__(self,
+                 host='192.168.1.2',
+                 pass_='dummypass', db=0):
+        """Allow for many instances of itself."""
         self.database = redis.Redis(
             host=host,
             password=pass_,
@@ -35,15 +37,17 @@ class Database(object):
         )
 
     def main(self):
+        """Test of connection settings."""
         if self.database:
             log.debug("found that database")
             if self.write_data('4', '20'):
                 log.debug("wrote that data")
-                pass
-            twenty = self.get_word_by_position(4)
-            four = self.get_word_by_position(twenty)
-            log.debug("read data test: {}, {}".format(twenty, four))
-            if int(float(twenty)) is 4:
+            twenty = self.read_data('4')
+            log.debug("read data test: {}, type: {}".format(
+                twenty, type(twenty)
+                ))
+            # Gotta stop comparing to literal.
+            if int(float(twenty)) is 20:
                 return True
 
             log.warn("see here... see.")
@@ -53,10 +57,12 @@ class Database(object):
         return False
 
     def write_data(self, key, value):
+        """Should have an H value as well."""
         self.database.set(key, value)
         return True
 
     def read_data(self, key):
+        """A basic read of redis data with a utf check."""
         try:
             value = self.database.get(key).decode('UTF-8')
         except:
@@ -77,4 +83,3 @@ if __name__ == '__main__':
     except Exception as e:
         log.error("and thats okay too.")
         sys.exit(e)
-

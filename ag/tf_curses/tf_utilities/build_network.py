@@ -28,22 +28,34 @@ __maintainer__ = "Eric Petersen"
 __email__ = "ruckusist@alphagriffin.com"
 __status__ = "Prototype"
 
+
 def elapsed(sec):
-    if sec<60:
+    """I cant remember whos function this was.
+
+    Sorry bro... ill look it up soon.
+    """
+    if sec < 60:
         return "{0:.2f} {1:}".format(sec, "sec")
-    elif sec<(60*60):
+    elif sec < (60*60):
         return "{0:.2f} {1:}".format(sec/60, "min")
     else:
         return "{0:.2f} {1:}".format(sec/(60*60), "hr")
 
 
 class App(object):
+    """Shit, there are no docstrings here.
+
+    TODO: docstrings.
+    """
+
     def __init__(self):
+        """Gotta have docstrings."""
         root_path = '/home/eric/repos/pycharm_repos/TF_Curses'
         self.database = DB.Database(db=0)
         self.rev_dict = DB.Database(db=1)
         self.p = inflect.engine()
         self.n_input = 3
+        self.vocab_size = 10000
         self.n_hidden = 512
         self.logs_path = '/pub/models/chatbot/'
         self.filename = 'alphagriffin'
@@ -53,24 +65,29 @@ class App(object):
         self.iters = 50
 
     def main(self, args):
-        log.info("TESTRUN -")
-        # get a text file... say sample.txt
+        """The Commandline exec of the chatbot network."""
+        log.info("Beginning commandline exec of the chatbot network.")
+        # get a text file... say lincoln.txt
         try:
-            file = args[1]
+            file_ = args[1]
+            log.info("Recieving Documents: {}".format(file_))
         except:
-            file = None
-        if file is None:
-            # file = "../text/sample.txt"
-            file = "../text/lincoln.txt"
-            # file = "sample.txt"
+            file_ = None
+        if file_ is None:
+            # file_ = "../text/sample.txt"
+            file_ = "../text/lincoln.txt"
+            log.debug("Going with sample: {}".format(file_))
         # Get some data
-        log.info("Opening File: {}".format(file))
-        sample_set = self.read_data(file)
-
+        log.info("Opening File: {}".format(file_))
+        sample_set = self.read_data(file_)
+        if not sample_set:
+            return False
         # clean your data
         log.info("Building Database Dictionary")
         sample_set = self.build_redis_dataset(sample_set)
-
+        if not sample_set:
+            return False
+        """
         # build a tensorboard
         log.info("build tensorflow network")
         log.debug("Trying to Load Old Model")
@@ -85,22 +102,41 @@ class App(object):
         msg = "Train Iters: {}".format(self.train_iters)
         log.info("Training Details:\n{}".format(msg))
         final_loss, average_acc = self.process_network(sample_set, network)
+        """
         return True
 
-    def read_data(self, fname):
+    @staticmethod
+    def save_npy(array, path):
+        """Save out adjusted datafile with UNK tokens."""
+        np.save(array, path)
+        return True
+
+    @staticmethod
+    def read_data(fname):
+        """Create numpy representation of text from path."""
+        log.info("Processing text at path: {}".format(fname))
         if not os.path.isfile(fname):
             log.warn("{} is an invalid path".format(fname))
             return False
-        class sample_text(): pass
+        class sample_text: pass
         with open(fname) as f:
             content = f.readlines()
         content = [x.strip() for x in content]
         content = [content[i].split() for i in range(len(content))]
         content = np.array(content)
         sample_text.content = np.reshape(content, [-1, ])
+        sample_text.len = sample_text.content.shape[0]
+        sample_text.sample = sample_text.content[
+            np.random.randint(0, sample_text.len)
+            ]
+        # this should be red if lower than x and green if above y.
+        log.debug("Sample text is {} words long.".format(sample_text.len))
+        log.info("Sample word from text:\n\t{}".format(sample_text.sample))
+        log.info("File Loaded successfully.")
         return sample_text
 
     def get_text_file(self, file_, trunk=True):
+        """Gotta have docstrings."""
         if not os.path.isfile(file_):
             log.warn("{} is an invalid path".format(file_))
             return False
@@ -142,6 +178,7 @@ class App(object):
         return sample_text
 
     def build_dataset(self, sample_set):
+        """Gotta have docstrings."""
         sample_set.count = collections.Counter(sample_set.content).most_common()
         sample_set.dictionary = dict()
         log.debug("adding word at pos. word[pos]")
@@ -156,49 +193,122 @@ class App(object):
         return sample_set
 
     def build_redis_dataset(self, sample_set):
-        # ints being in the input is hammering my output...
-        # this should fix that...
-        sample_set.count = collections.Counter(sample_set.content).most_common()
-        log.debug("adding words to redis {'word' : 'index'}")
-        sample_set.dict_len = 0
-        sample_set.num_converted = 0
-        sample_set.num_to_dict = 0
-        sample_set.converted = []
-        for word, _ in sample_set.count:
-            cur_len = sample_set.dict_len
-            #if isinstance(word, int) or isinstance(word, float):
-            try:
-                word = float(word)
-                word_ = self.p.number_to_words(int(word))
-                sample_set.num_converted += 1
-                sample_set.converted.append((word, word_))
-                word = word_
-            except:
-                pass
-
-            # FIX ME... SEARCH FOR OLD REFERENCE FIRST!
-            # this is broken
-            if self.database.read_data(word) is cur_len:
-                pass
+        """Use redis for managing a dynamic words library."""
+        log.info("Accessing redis for text management.")
+        start_time = time.time()
+        sample_set.count = collections.Counter(
+            sample_set.content).most_common()
+        sample_set.dict = dict()
+        sample_set.rev_dict = dict()
+        sample_set.dict['UNK'] = 0
+        sample_set.rev_dict[0] = 'UNK'
+        sample_set.num_unk = 0
+        # unk replacer
+        unk_repacler = {'{}'.format(y): '{}'.format(x) for x, y in enumerate(
+            sample_set.content)}
+        sample_set.Unique_words = 0
+        for i, _ in sample_set.count:
+            sample_set.Unique_words += 1
+        for index, (word, word_instances) in enumerate(sample_set.count):
+            mesg = "Popularity Rank: {}, Word: {}: Num References: {}".format(
+                index+1, word, word_instances
+            )
+            # the plan! Stop after 10k words. After that,
+            # replace the words in the input text as UNK.
+            if index <= self.vocab_size:
+                # add each entry to the dict
+                sample_set.dict[word] = index
+                sample_set.rev_dict[index] = word
             else:
-                self.database.write_data(str(word), int(cur_len))
-                self.rev_dict.write_data(int(cur_len), str(word))
-                sample_set.num_to_dict += 1
-            #self.database.set_wordposition(str(word), int(cur_len))
-            sample_set.dict_len += 1
-        log.debug("len of dictionary {}".format(sample_set.dict_len))
-        log.debug("Num Converted words {}".format(sample_set.num_converted))
-        log.debug("Num  words added to database {}".format(sample_set.num_to_dict))
+                # This takes time...
+                loop_start = time.time()
+                print("##################################")
+                print("- Looking for {} instances of {}".format(
+                    word_instances, word
+                ))
+                for j in range(word_instances):
+                    word_place = unk_repacler[word]
+                    sample_set.num_unk += 1
+                    print("- Place in data to replace a word: {}".format(word_place))
+                    print("-is {} this {}".format(word,
+                                                  sample_set.content[
+                                                     int(word_place)]))
+                    if word in sample_set.content[int(word_place)]:
+                        print("-- Yes.")
+                        sample_set.content[int(word_place)] = 'UNK'
+                        print('-# Changed to UNK')
+                        # update the unk_repacler
+                        if j+1 < word_instances:
+                            print("-! Checking for other instances of word: {}.".format(word))
+                            unk_repacler = {'{}'.format(y): '{}'.format(x) for x, y in enumerate(
+                                sample_set.content)}
+                    else:
+                        print("-! Bogus word. {}".format(word))
+
+                loop_end = time.time()
+                # if index % 100 == 0:
+                elap = loop_end - loop_start
+                left = sample_set.Unique_words - (sample_set.num_unk + self.vocab_size)
+                print("Word took {} to fix.".format(
+                    elapsed(elap)
+                ))
+                print("######|| Have {} left to fix. should take {} ||######".format(
+                    left, elapsed(elap * left)
+                ))
+
+                # lookup word in input and replace it with 'UNK'
+            #    for i_content, content_word in enumerate(sample_set.content):
+            #        if word in content_word:
+            #            sample_set.content[i_content] = 'UNK'
+            #            print("setting {} as UNK, num_unk: {}".format(word, sample_set.num_unk))
+            #            sample_set.num_unk += 1
+            # do redis next...
+        end_time = time.time()
+        print("process took {}secs to complete.".format(
+            elapsed(end_time - start_time)
+        ))
+        print("sample_set.num_unk ", sample_set.num_unk)
+        log.debug("Recounting Words in dataset: {}".format(
+            len(sample_set.dict)
+            ))
+        log.info("Finished Creating Dictionaries from texts.")
+        """
+        try:
+            word = float(word)
+            word_ = self.p.number_to_words(int(word))
+            sample_set.num_converted += 1
+            sample_set.converted.append((word, word_))
+            word = word_
+        except:
+            pass
+
+        # FIX ME... SEARCH FOR OLD REFERENCE FIRST!
+        # this is broken
+        if self.database.read_data(word) is cur_len:
+            pass
+        else:
+            self.database.write_data(str(word), int(cur_len))
+            self.rev_dict.write_data(int(cur_len), str(word))
+            sample_set.num_to_dict += 1
+        #self.database.set_wordposition(str(word), int(cur_len))
+        sample_set.dict_len += 1
+        """
+        # log.debug("len of dictionary {}".format(sample_set.dict_len))
+        # log.debug("Num Converted words {}".format(sample_set.num_converted))
+        # log.debug("Num  words added to database {}".format(sample_set.num_to_dict))
         # print(sample_set.converted)
         return sample_set
 
     def new_weights(self, shape):
+        """This is standard tf_utils stuff."""
         return tf.Variable(tf.random_normal([self.n_hidden, shape]), name="weights")
 
     def new_biases(self, shape):
+        """This is standard tf_utils stuff."""
         return tf.Variable(tf.random_normal([shape]), name="biases")
 
     def RNN(self, training_ops, dict_len, num_layers=4):
+        """This is standard tf_utils stuff."""
         x = tf.reshape(training_ops.input_word, [-1, self.n_input])
         x = tf.split(x, self.n_input, 1)
         cells = []
@@ -221,6 +331,7 @@ class App(object):
         return a_tensorflow_layer
 
     def build_network(self, sample_set):
+        """This is standard tf_utils stuff."""
         class training_ops(): pass
         # RNN output node weights and biases
         # tf Graph input
@@ -287,6 +398,7 @@ class App(object):
         return training_ops
 
     def process_network(self, sample_set, network, ):
+        """This is standard tf_utils stuff."""
 
         # DEFINES!!
         training_data = sample_set.content
@@ -393,6 +505,7 @@ class App(object):
         session.close()
 
     def load_tf_model(self, folder=None):
+        """This is standard tf_utils stuff."""
         if folder is None: folder = self.logs_path
         log.info("Loading Model: {}".format("Model_Name"))
         if self.sess:
@@ -414,6 +527,7 @@ class App(object):
         return True
 
     def load_model_params(self):
+        """This is standard tf_utils stuff."""
         log.info("Loading Model Params")
         class params(object): pass
         params.list_all_ops = [n.name for n in tf.get_default_graph().as_graph_def().node]
@@ -453,7 +567,7 @@ if __name__ == '__main__':
         os.system('clear')
         app = App()
         if app.main(sys.argv):
-            sys.exit("Thanks A lot for trying Alphagriffin.com")
+            sys.exit("PASSED: Thanks A lot for trying Alphagriffin.com")
         log.warn("Alldone! Alphagriffin.com")
 
     except KeyboardInterrupt:
