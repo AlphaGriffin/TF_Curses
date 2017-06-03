@@ -6,6 +6,7 @@ Eric Petersen @Ruckusist <eric.alphagriffin@gmail.com>
 from setuptools import setup, find_packages
 from codecs import open
 from os import path
+import py2exe
 
 if __name__ == '__main__':
     # long_description breaks out of DIR installs!
@@ -73,6 +74,10 @@ if __name__ == '__main__':
         entry_points={
             'console_scripts': [
                 'tf_curses = ag.tf_curses.__main__:main'
+            ]
+            # for windows
+            'console': [
+            'launch.py'
             ]
         },
         test_suite='nose.collector',
