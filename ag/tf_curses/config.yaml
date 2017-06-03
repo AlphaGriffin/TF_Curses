@@ -1,16 +1,22 @@
 ########################################################
 #    Alphagriffin.com The TF_Curses Project            #
+# this is a test config for tf_curses test_buckets.    #
 # ==================================================== #
 # Application: Python Key: value for options class.    #
 #   - options.key = value                              #
 ########################################################
 
 #//////| DATABASE |\\\\\\#
-redis_host: 'localhost'
+redis_host: '192.168.99.225'
 redis_pass: 'dummypass'
 
 #//////| DATASET |\\\\\\#
 
 #//////| NETWORK |\\\\\\#
+model_save_dir: '/pub/models/chessbot/current'
+model_save_name: 'AlphaGriffin'
+batch_size: 128
+train_period: 1000
+save_period: 250
 
 #//////| APP |\\\\\\#

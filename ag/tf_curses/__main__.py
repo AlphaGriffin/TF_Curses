@@ -19,16 +19,33 @@ from datetime import datetime
 from time import sleep
 from threading import Thread
 import ag.logging as log
-import ag.tf_curses.server.basic_server as serv
-import ag.tf_curses.chatbot.chatbot as chatbot
-import ag.tf_curses.chess.chessgame as chess_game
-import ag.tf_curses.server.tf_server as tf_server
-import ag.tf_curses.database.database_interface as db
-from ag.tf_curses.frontend.curses_frontend import Window as Curses
+import server.basic_server as serv
+import chatbot.chatbot as chatbot
+import chess.chessgame as chess_game
+import server.tf_server as tf_server
+import database.database_interface as db
+from frontend.curses_frontend import Window as Curses
 import ag.tf_curses.server.flask_server as flask_talker
 log.set(log.WARN)
 
+class Options(object):
+    """OH OH DO a yaml file!."""
 
+    def __init__(self, data_path):
+        """OH OH DO a yaml file!."""
+        config = self.load_options(data_path)
+        for i in config:
+            setattr(self, '{}'.format(i), '{}'.format(config[i]))
+
+    def load_options(self, data_path):
+        """COOL! a yaml file."""
+        try:
+            with open(data_path, 'r') as config:
+                new_config = yaml.load(config)
+            return new_config
+        except Exception as e:
+            print("burn {}".format(e))
+""" DEPRICATED!
 class Options(object):
     def __init__(self):
         self.host = "localhost"
@@ -38,6 +55,7 @@ class Options(object):
         self.tf_port = 2222
         self.redis_port = 6379
         self.flask_port = 5000
+"""
 
 class TF_Curses(object):
     def __init__(self, options):
